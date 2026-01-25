@@ -1,0 +1,4 @@
+capabilities: X-SERVER-SEARCH
+state: selected
+ok search charset utf-8 body "unique phrase"
+* search 1
