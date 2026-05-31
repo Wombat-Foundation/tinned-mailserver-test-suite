@@ -4,8 +4,8 @@ The following list contains the test cases and the configuration settings used i
 
 ## Basic concept
 
-The test cases listed here use configuration parameters to configure the test cases before they are executed. 
-This documentation shows the specific configuration variables used in each of the test cases. 
+The test cases listed here use configuration parameters to configure the test cases before they are executed.
+This documentation shows the specific configuration variables used in each of the test cases.
 
 The configuration specifies a number of email addresses and user/password combination. The credentials are used to authenticate against the mailserver under test. Email addresses for external email accounts used as receivers for outbound emails are also specified for some tests.
 
@@ -36,7 +36,7 @@ The configuration specifies a number of email addresses and user/password combin
 
 ### Description
 
-This test email is intended to test a successfull outbound massage through the mailserver under test.
+This test email is intended to test a successful outbound massage through the mailserver under test.
 The email is sent with an users main email address.
 
 * connects via submissions port (TLS, port 465)
@@ -213,4 +213,3 @@ This test is considered passed when the email is **successfully rejected** (Swak
 		* string must be alone in a line
 	* NAItube Critical "XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-MXL11*C.34X"
 		* string must be alone in a line
-
