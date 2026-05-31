@@ -13,6 +13,7 @@ if [[ ! -f "./vars.conf" ]]; then
 	exit 1
 fi
 
+# shellcheck source=/dev/null
 source ./vars.conf
 
 # call prepare script to populate the settings into the config files
@@ -22,27 +23,28 @@ echo
 CMAX=60
 
 # get the list of testcases
-TESTCASES=$(find ${CONFIG_PATH} -name '*.conf' | xargs -n 1 basename | sort)
+# shellcheck disable=SC2012
+TESTCASES=$(find "${CONFIG_PATH}" -name '*.conf' -exec basename {} \; | sort)
 
 # create the log directory if not existing
 if [[ ! -d "${LOG_PATH}" ]]; then
-	mkdir -p ${LOG_PATH}
+	mkdir -p "${LOG_PATH}"
 fi
 
 FAILED_TESTS=0
 
-for TC in ${TESTCASES[@]}; do
+for TC in "${TESTCASES[@]}"; do
 	TC_RC_EXP=$(echo "${TC}" | sed -E 's/^.*__([0-9]+)\.conf/\1/')
 
 	#echo -e "Testcase ...... ${TC}"
 	#echo -e "Expected RC ... ${TC_RC_EXP}"
 
-	swaks --config ${CONFIG_PATH}/${TC} >${LOG_PATH}/${TC/.conf/.log} 2>&1
+	swaks --config "${CONFIG_PATH}/${TC}" >"${LOG_PATH}/${TC/.conf/.log}" 2>&1
 	TC_RC=$?
 	# calculate the amount of characters to align the columns
 	# Use printf to create a string of dots for alignment
 	DOTS=$(printf '%*s' "$CMAX" '' | tr ' ' '.')
-	CL=$(echo "$DOTS" | head -c $((${CMAX} - ${#TC_RC})))
+	CL=$(echo "$DOTS" | head -c $((CMAX - TC_RC)))
 	if [[ "${TC_RC}" -eq "${TC_RC_EXP}" ]]; then
 		echo -e "Testcase ...... ${GREEN}PASSED (${TC_RC})${RST} ${CL} ${TC/.conf/}"
 	else
