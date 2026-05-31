@@ -3,7 +3,6 @@
 # Load the configuration variables
 source vars.conf
 
-
 if [[ ! -d ${TEMPLATE_PATH} ]]; then
 	echo "Error: Template directory ${TEMPLATE_PATH} not found."
 	exit 1

@@ -19,7 +19,7 @@ source ./vars.conf
 bash ./prepare.sh
 echo
 
-CMAX=20
+CMAX=60
 
 # get the list of testcases
 TESTCASES=$(find ${CONFIG_PATH} -name '*.conf' | xargs -n 1 basename | sort)
@@ -40,7 +40,7 @@ for TC in ${TESTCASES[@]}; do
 	swaks --config ${CONFIG_PATH}/${TC} >${LOG_PATH}/${TC/.conf/.log} 2>&1
 	TC_RC=$?
 	# calculate the amount of characters to align the columns
-	CL=$(echo "....." | head -c $((${CMAX}-${#TC_RC})) )
+	CL=$(echo "....." | head -c $((${CMAX} - ${#TC_RC})))
 	if [[ "${TC_RC}" -eq "${TC_RC_EXP}" ]]; then
 		echo -e "Testcase ...... ${GREEN}PASSED (${TC_RC})${RST} ${CL} ${TC/.conf/}"
 	else

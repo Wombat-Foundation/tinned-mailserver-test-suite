@@ -32,11 +32,14 @@ Then follow these steps:
 
 ### GitHub Actions
 
-This repository includes a GitHub Action workflow to automate these tests. You will need to configure the following secrets in your GitHub repository:
+This repository includes a GitHub Action workflow to automate these tests. To make this work, you need to configure your environment in GitHub (**Settings** > **Secrets and variables** > **Actions**):
+
+#### 1. Variables (Plaintext)
+
+Add these under the **Variables** tab for non-sensitive configuration:
 
 - `MAILSERVER_NAME`
 - `SENDER_AUTH_USER`
-- `SENDER_AUTH_PASSWORD`
 - `SENDER_ADDRESS_MAIN`
 - `SENDER_ADDRESS_ALIAS`
 - `SENDER_ADDRESS_MAIN_TAG`
@@ -44,6 +47,12 @@ This repository includes a GitHub Action workflow to automate these tests. You w
 - `SENDER_ADDRESS_DENIED`
 - `SENDER_ADDRESS_FORGED`
 - `SENDER_ADDRESS_FORGED2`
-- `RECIPIENT_ADDRESS` (defaults to `services@nutra.tk` if not set)
+- `RECIPIENT_ADDRESS`
+
+#### 2. Secrets (Encrypted)
+
+Add these under the **Secrets** tab for sensitive data:
+
+- `SENDER_AUTH_PASSWORD`
 
 The list of test cases can be found in the [Testcases](Testcases.md) documentation.

@@ -2,27 +2,14 @@ name: Mailserver Test Suite CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   smtp-tests:
     runs-on: ubuntu-latest
-    env:
-      # --- Non-sensitive Configuration (Edit these directly here) ---
-      MAILSERVER_NAME: "mail.nutra.tk"
-      SENDER_AUTH_USER: "shane@nutra.tk"
-      SENDER_ADDRESS_MAIN: "shane@nutra.tk"
-      SENDER_ADDRESS_ALIAS: "admin@nutra.tk"
-      SENDER_ADDRESS_MAIN_TAG: "shane+test@nutra.tk"
-      SENDER_ADDRESS_ALIAS_TAG: "admin+test@nutra.tk"
-      SENDER_ADDRESS_DENIED: "otheruser@nutra.tk"
-      SENDER_ADDRESS_FORGED: "ceo@google.com"
-      SENDER_ADDRESS_FORGED2: "admin@microsoft.com"
-      RECIPIENT_ADDRESS: "services@nutra.tk"
-      
     steps:
       - uses: actions/checkout@v4
 
@@ -33,26 +20,17 @@ jobs:
 
       - name: Prepare vars.conf
         env:
+          MAIL_CONFIG_VARS: ${{ vars.MAIL_CONFIG_VARS }}
           SENDER_AUTH_PASSWORD: ${{ secrets.SENDER_AUTH_PASSWORD }}
         run: |
-          cat <<EOF > smtp-tests/vars.conf
-          export TEMPLATE_PATH=./templates
-          export CONFIG_PATH=./config
-          export LOG_PATH=./logs
-          export PAYLOAD_PATH=../test/payload_files
-          export MAILSERVER_NAME="$MAILSERVER_NAME"
-          export SENDER_AUTH_USER="$SENDER_AUTH_USER"
-          export SENDER_AUTH_PASSWORD="$SENDER_AUTH_PASSWORD"
-          export SENDER_ADDRESS_MAIN="$SENDER_ADDRESS_MAIN"
-          export SENDER_ADDRESS_ALIAS="$SENDER_ADDRESS_ALIAS"
-          export SENDER_ADDRESS_MAIN_TAG="$SENDER_ADDRESS_MAIN_TAG"
-          export SENDER_ADDRESS_ALIAS_TAG="$SENDER_ADDRESS_ALIAS_TAG"
-          export SENDER_ADDRESS_DENIED="$SENDER_ADDRESS_DENIED"
-          export SENDER_ADDRESS_FORGED="$SENDER_ADDRESS_FORGED"
-          export SENDER_ADDRESS_FORGED2="$SENDER_ADDRESS_FORGED2"
-          export RECIPIENT_ADDRESS="$RECIPIENT_ADDRESS"
-          EOF
-
+          if [[ -z "$MAIL_CONFIG_VARS" ]]; then
+            echo "Error: MAIL_CONFIG_VARS variable is missing."
+            exit 1
+          fi
+          # Write the bulk config
+          echo "$MAIL_CONFIG_VARS" > smtp-tests/vars.conf
+          # Append the secret password
+          echo "export SENDER_AUTH_PASSWORD=\"$SENDER_AUTH_PASSWORD\"" >> smtp-tests/vars.conf
       - name: Run SMTP tests
         working-directory: smtp-tests
         run: bash run.sh
