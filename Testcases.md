@@ -34,7 +34,7 @@ The configuration specifies a number of email addresses and user/password combin
 
 ### Description
 
-This test email is intended to test a successful outbound massage through the mailserver under test.
+This test email is intended to test a successful outbound message through the mailserver under test.
 The email is sent with an users main email address.
 
 - connects via submissions port (TLS, port 465)
@@ -59,7 +59,7 @@ This test is considered passed when the email is **successfully accepted for sen
 
 ### Description
 
-This test email is intended to test a successful outbound massage through the mailserver under test.
+This test email is intended to test a successful outbound message through the mailserver under test.
 The email is sent with an alias address to test alias handling for outbound email messages.
 
 - connects via submissions port (TLS, port 465)
@@ -84,7 +84,7 @@ This test is considered passed when the email is **successfully accepted for sen
 
 ### Description
 
-This test email is intended to test a successful outbound massage through the mailserver under test.
+This test email is intended to test a successful outbound message through the mailserver under test.
 The email is sent with an users main email address with an address extension.
 
 - connects via submissions port (TLS, port 465)
@@ -109,7 +109,7 @@ This test is considered passed when the email is **successfully accepted for sen
 
 ### Description
 
-This test email is intended to test a successful outbound massage through the mailserver under test.
+This test email is intended to test a successful outbound message through the mailserver under test.
 The email is sent with an alias email address with an address extension.
 
 - connects via submissions port (TLS, port 465)
