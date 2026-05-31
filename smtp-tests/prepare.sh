@@ -4,12 +4,18 @@
 source vars.conf
 
 
-# Use `envsubst` to replace variables in the conf templates with the actual values
-# envsubst <input.conf >output.conf
-if [[ ! -d ${CONFIG_PATH} ]]; then
-	mkdir ${CONFIG_PATH}
+if [[ ! -d ${TEMPLATE_PATH} ]]; then
+	echo "Error: Template directory ${TEMPLATE_PATH} not found."
+	exit 1
 fi
-for T in $(ls -1 templates/*.conf | xargs -n 1 basename); do
-	echo "Process ... ${T}"
-	envsubst <${TEMPLATE_PATH}/${T} >${CONFIG_PATH}/${T}
+
+if [[ ! -d ${CONFIG_PATH} ]]; then
+	mkdir -p ${CONFIG_PATH}
+fi
+
+for T in $(ls -1 ${TEMPLATE_PATH}/*.conf 2>/dev/null | xargs -n 1 basename 2>/dev/null); do
+	if [[ -n "$T" ]]; then
+		echo "Process ... ${T}"
+		envsubst <${TEMPLATE_PATH}/${T} >${CONFIG_PATH}/${T}
+	fi
 done

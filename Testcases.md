@@ -126,6 +126,53 @@ The email is sent with an alias email address with an address extension.
 This test is considered passed when the email is **successfully accepted for sending**.
 
 
+## 201 inbound_eicar_txt
+
+### Variables
+
+| Variable               | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
+| MAILSERVER_NAME        | The name or IP address of the mailserver                     |
+| SENDER_ADDRESS_MAIN    | The email address of the local user to receive the test mail |
+| RECIPIENT_ADDRESS      | The external email address sending the test mail             |
+| PAYLOAD_PATH           | Path to the EICAR.TXT file                                   |
+
+### Description
+
+This test email contains the EICAR test signature in an attachment. It is sent as an inbound message to the mailserver under test.
+
+* connects via SMTP port (port 25)
+* uses STARTTLS
+* sends email with EICAR.TXT attachment
+
+### Pass criteria
+
+This test is considered passed when the email is **successfully rejected** (Swaks exit code 24).
+
+
+## 202 inbound_gtube
+
+### Variables
+
+| Variable               | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
+| MAILSERVER_NAME        | The name or IP address of the mailserver                     |
+| SENDER_ADDRESS_MAIN    | The email address of the local user to receive the test mail |
+| RECIPIENT_ADDRESS      | The external email address sending the test mail             |
+
+### Description
+
+This test email contains the GTUBE (Generic Test for Unsolicited Bulk Email) string in the body. It is sent as an inbound message to the mailserver under test.
+
+* connects via SMTP port (port 25)
+* uses STARTTLS
+* sends email with GTUBE string in the body
+
+### Pass criteria
+
+This test is considered passed when the email is **successfully rejected** (Swaks exit code 24).
+
+
 ## ToDo
 
 ### Outgoing
