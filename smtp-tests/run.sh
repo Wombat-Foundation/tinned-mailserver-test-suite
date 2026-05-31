@@ -40,7 +40,9 @@ for TC in ${TESTCASES[@]}; do
 	swaks --config ${CONFIG_PATH}/${TC} >${LOG_PATH}/${TC/.conf/.log} 2>&1
 	TC_RC=$?
 	# calculate the amount of characters to align the columns
-	CL=$(echo "....." | head -c $((${CMAX} - ${#TC_RC})))
+	# Use printf to create a string of dots for alignment
+	DOTS=$(printf '%*s' "$CMAX" '' | tr ' ' '.')
+	CL=$(echo "$DOTS" | head -c $((${CMAX} - ${#TC_RC})))
 	if [[ "${TC_RC}" -eq "${TC_RC_EXP}" ]]; then
 		echo -e "Testcase ...... ${GREEN}PASSED (${TC_RC})${RST} ${CL} ${TC/.conf/}"
 	else
