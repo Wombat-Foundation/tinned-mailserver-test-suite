@@ -10,6 +10,19 @@ on:
 jobs:
   smtp-tests:
     runs-on: ubuntu-latest
+    env:
+      # --- Non-sensitive Configuration (Edit these directly here) ---
+      MAILSERVER_NAME: "mail.nutra.tk"
+      SENDER_AUTH_USER: "shane@nutra.tk"
+      SENDER_ADDRESS_MAIN: "shane@nutra.tk"
+      SENDER_ADDRESS_ALIAS: "admin@nutra.tk"
+      SENDER_ADDRESS_MAIN_TAG: "shane+test@nutra.tk"
+      SENDER_ADDRESS_ALIAS_TAG: "admin+test@nutra.tk"
+      SENDER_ADDRESS_DENIED: "otheruser@nutra.tk"
+      SENDER_ADDRESS_FORGED: "ceo@google.com"
+      SENDER_ADDRESS_FORGED2: "admin@microsoft.com"
+      RECIPIENT_ADDRESS: "services@nutra.tk"
+      
     steps:
       - uses: actions/checkout@v4
 
@@ -20,17 +33,7 @@ jobs:
 
       - name: Prepare vars.conf
         env:
-          MAILSERVER_NAME: ${{ secrets.MAILSERVER_NAME }}
-          SENDER_AUTH_USER: ${{ secrets.SENDER_AUTH_USER }}
           SENDER_AUTH_PASSWORD: ${{ secrets.SENDER_AUTH_PASSWORD }}
-          SENDER_ADDRESS_MAIN: ${{ secrets.SENDER_ADDRESS_MAIN }}
-          SENDER_ADDRESS_ALIAS: ${{ secrets.SENDER_ADDRESS_ALIAS }}
-          SENDER_ADDRESS_MAIN_TAG: ${{ secrets.SENDER_ADDRESS_MAIN_TAG }}
-          SENDER_ADDRESS_ALIAS_TAG: ${{ secrets.SENDER_ADDRESS_ALIAS_TAG }}
-          SENDER_ADDRESS_DENIED: ${{ secrets.SENDER_ADDRESS_DENIED }}
-          SENDER_ADDRESS_FORGED: ${{ secrets.SENDER_ADDRESS_FORGED }}
-          SENDER_ADDRESS_FORGED2: ${{ secrets.SENDER_ADDRESS_FORGED2 }}
-          RECIPIENT_ADDRESS: ${{ secrets.RECIPIENT_ADDRESS || 'services@nutra.tk' }}
         run: |
           cat <<EOF > smtp-tests/vars.conf
           export TEMPLATE_PATH=./templates
