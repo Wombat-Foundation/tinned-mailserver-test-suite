@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # Load the configuration variables
+# Use set -a to automatically export all variables so envsubst can see them
+set -a
 # shellcheck source=/dev/null
 source vars.conf
+set +a
 
 if [[ ! -d "${TEMPLATE_PATH}" ]]; then
 	echo "Error: Template directory ${TEMPLATE_PATH} not found."
@@ -14,9 +17,9 @@ if [[ ! -d "${CONFIG_PATH}" ]]; then
 fi
 
 # shellcheck disable=SC2011,SC2012
-for T in $(ls -1 "${TEMPLATE_PATH}"/*.conf 2>/dev/null | xargs -n 1 basename 2>/dev/null); do
-	if [[ -n "$T" ]]; then
-		echo "Process ... ${T}"
-		envsubst <"${TEMPLATE_PATH}/${T}" >"${CONFIG_PATH}/${T}"
-	fi
+for T_PATH in "${TEMPLATE_PATH}"/*.conf; do
+	[[ -e "$T_PATH" ]] || continue
+	T=$(basename "$T_PATH")
+	echo "Process ... ${T}"
+	envsubst <"$T_PATH" >"${CONFIG_PATH}/${T}"
 done

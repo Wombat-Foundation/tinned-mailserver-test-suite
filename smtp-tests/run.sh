@@ -25,8 +25,6 @@ source ./vars.conf
 bash ./prepare.sh
 echo
 
-CMAX=60
-
 # get the list of testcases
 # shellcheck disable=SC2012
 readarray -t TESTCASES < <(find "${CONFIG_PATH}" -name '*.conf' -exec basename {} \; | sort)
@@ -39,22 +37,44 @@ fi
 FAILED_TESTS=0
 
 for TC in "${TESTCASES[@]}"; do
-	TC_RC_EXP=$(echo "${TC}" | sed -E 's/^.*__([0-9]+)\.conf/\1/')
+	[[ -z "$TC" ]] && continue
 
-	#echo -e "Testcase ...... ${TC}"
-	#echo -e "Expected RC ... ${TC_RC_EXP}"
-
-	swaks --config "${CONFIG_PATH}/${TC}" >"${LOG_PATH}/${TC/.conf/.log}" 2>&1
-	TC_RC=$?
-	# calculate the amount of characters to align the columns
-	# Use printf to create a string of dots for alignment
-	DOTS=$(printf '%*s' "$CMAX" '' | tr ' ' '.')
-	CL=$(echo "$DOTS" | head -c $((CMAX - TC_RC)))
-	if [[ "${TC_RC}" -eq "${TC_RC_EXP}" ]]; then
-		echo -e "Testcase ...... ${GREEN}PASSED (${TC_RC})${RST} ${CL} ${TC/.conf/}"
+	# Extract expected return code from filename (e.g., swaks__...__0.conf -> 0)
+	if [[ "$TC" =~ __([0-9]+)\.conf$ ]]; then
+		TC_RC_EXP="${BASH_REMATCH[1]}"
 	else
-		echo -e "Testcase ...... ${RED}FAILED (${TC_RC})${RST} ${CL} ${TC/.conf/}"
+		TC_RC_EXP=0
+	fi
+
+	TC_NAME="${TC%.conf}"
+
+	swaks --config "${CONFIG_PATH}/${TC}" >"${LOG_PATH}/${TC_NAME}.log" 2>&1
+	TC_RC=$?
+
+	# Determine result and color
+	if [[ "${TC_RC}" -eq "${TC_RC_EXP}" ]]; then
+		RESULT_STR="PASSED (${TC_RC})"
+		COLOR="${GREEN}"
+	else
+		RESULT_STR="FAILED (${TC_RC})"
+		COLOR="${RED}"
 		FAILED_TESTS=$((FAILED_TESTS + 1))
+	fi
+
+	# Alignment logic: align filenames at column 75
+	PREFIX="Testcase ...... ${RESULT_STR} "
+	PREFIX_LEN=${#PREFIX}
+	DOT_COUNT=$((75 - PREFIX_LEN))
+	[[ $DOT_COUNT -lt 1 ]] && DOT_COUNT=1
+	DOTS=$(printf "%${DOT_COUNT}s" | tr ' ' '.')
+
+	echo -e "Testcase ...... ${COLOR}${RESULT_STR}${RST} ${DOTS} ${TC_NAME}"
+
+	# If test failed, show the first few lines of the swaks log for debugging
+	if [[ "${TC_RC}" -ne "${TC_RC_EXP}" ]]; then
+		echo -e "${YELLOW}Debug: First 5 lines of log:${RST}"
+		head -n 5 "${LOG_PATH}/${TC_NAME}.log" | sed 's/^/  /'
+		echo
 	fi
 done
 
