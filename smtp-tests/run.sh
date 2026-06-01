@@ -1,10 +1,15 @@
 #!/bin/bash
 
 # Color definition
+# shellcheck disable=SC2034
 GREEN='\e[0;32m'
+# shellcheck disable=SC2034
 YELLOW='\e[0;33m'
+# shellcheck disable=SC2034
 RED='\e[0;31m'
+# shellcheck disable=SC2034
 BLUE='\e[0;36m'
+# shellcheck disable=SC2034
 RST='\e[0m'
 
 if [[ ! -f "./vars.conf" ]]; then

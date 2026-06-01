@@ -13,7 +13,7 @@ if [[ ! -d "${CONFIG_PATH}" ]]; then
 	mkdir -p "${CONFIG_PATH}"
 fi
 
-# shellcheck disable=SC2012
+# shellcheck disable=SC2011,SC2012
 for T in $(ls -1 "${TEMPLATE_PATH}"/*.conf 2>/dev/null | xargs -n 1 basename 2>/dev/null); do
 	if [[ -n "$T" ]]; then
 		echo "Process ... ${T}"

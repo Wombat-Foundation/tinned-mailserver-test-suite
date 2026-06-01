@@ -35,18 +35,17 @@ jobs:
           sudo apt-get install -y swaks gettext-base
 
       - name: Prepare vars.conf
-        env:
-          MAIL_CONFIG_VARS: ${{ vars.MAIL_CONFIG_VARS }}
-          SENDER_AUTH_PASSWORD: ${{ secrets.SENDER_AUTH_PASSWORD }}
         run: |
-          if [[ -z "$MAIL_CONFIG_VARS" ]]; then
-            echo "Error: MAIL_CONFIG_VARS variable is missing."
+          cat <<'EOF' > smtp-tests/vars.conf
+          ${{ vars.MAIL_CONFIG_VARS }}
+          export SENDER_AUTH_PASSWORD="${{ secrets.SENDER_AUTH_PASSWORD }}"
+          EOF
+          # Strip any carriage returns (\r) that might have been pasted from Windows
+          sed -i 's/\r//g' smtp-tests/vars.conf
+          if [ ! -s smtp-tests/vars.conf ]; then
+            echo "Error: smtp-tests/vars.conf is empty. Check your MAIL_CONFIG_VARS variable."
             exit 1
           fi
-          # Write the bulk config
-          echo "$MAIL_CONFIG_VARS" > smtp-tests/vars.conf
-          # Append the secret password
-          echo "export SENDER_AUTH_PASSWORD=\"$SENDER_AUTH_PASSWORD\"" >> smtp-tests/vars.conf
       - name: Run SMTP tests
         working-directory: smtp-tests
         run: bash run.sh
