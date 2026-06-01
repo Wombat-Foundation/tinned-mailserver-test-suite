@@ -70,10 +70,10 @@ for TC in "${TESTCASES[@]}"; do
 
 	echo -e "Testcase ...... ${COLOR}${RESULT_STR}${RST} ${DOTS} ${TC_NAME}"
 
-	# If test failed, show the first few lines of the swaks log for debugging
+	# If test failed, show the full swaks log for debugging
 	if [[ "${TC_RC}" -ne "${TC_RC_EXP}" ]]; then
-		echo -e "${YELLOW}Debug: First 5 lines of log:${RST}"
-		head -n 5 "${LOG_PATH}/${TC_NAME}.log" | sed 's/^/  /'
+		echo -e "${YELLOW}Debug: Full log:${RST}"
+		cat "${LOG_PATH}/${TC_NAME}.log" | sed 's/^/  /'
 		echo
 	fi
 done

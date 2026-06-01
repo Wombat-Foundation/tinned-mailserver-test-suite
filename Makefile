@@ -27,6 +27,12 @@ format: ##H Format source files
 .PHONY: lint
 lint: shellcheck flake8 ##H Lint sources
 
+.PHONY: test
+test: ##H Run SMTP tests
+	@$(call print_info,Running SMTP tests...)
+	cd smtp-tests && bash run.sh
+	@$(call print_success,SMTP tests complete.)
+
 .PHONY: shellcheck
 shellcheck: ##H Lint shell scripts
 	@$(call print_info,Linting shell scripts with shellcheck...)
