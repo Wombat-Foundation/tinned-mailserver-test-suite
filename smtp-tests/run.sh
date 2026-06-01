@@ -29,7 +29,7 @@ CMAX=60
 
 # get the list of testcases
 # shellcheck disable=SC2012
-TESTCASES=$(find "${CONFIG_PATH}" -name '*.conf' -exec basename {} \; | sort)
+readarray -t TESTCASES < <(find "${CONFIG_PATH}" -name '*.conf' -exec basename {} \; | sort)
 
 # create the log directory if not existing
 if [[ ! -d "${LOG_PATH}" ]]; then
