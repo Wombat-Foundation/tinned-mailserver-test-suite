@@ -73,7 +73,7 @@ for TC in "${TESTCASES[@]}"; do
 	# If test failed, show the full swaks log for debugging
 	if [[ "${TC_RC}" -ne "${TC_RC_EXP}" ]]; then
 		echo -e "${YELLOW}Debug: Full log:${RST}"
-		cat "${LOG_PATH}/${TC_NAME}.log" | sed 's/^/  /'
+		sed 's/^/  /' "${LOG_PATH}/${TC_NAME}.log"
 		echo
 	fi
 done
