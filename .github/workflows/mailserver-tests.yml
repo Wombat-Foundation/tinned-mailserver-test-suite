@@ -29,23 +29,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y swaks gettext-base
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Prepare vars.conf
+      - name: Prepare .env
         run: |
-          cat <<'EOF' > smtp-tests/vars.conf
+          cat <<'EOF' > .env
           ${{ vars.MAIL_CONFIG_VARS }}
-          export SENDER_AUTH_PASSWORD="${{ secrets.SENDER_AUTH_PASSWORD }}"
+          SENDER_AUTH_PASSWORD="${{ secrets.SENDER_AUTH_PASSWORD }}"
           EOF
           # Strip any carriage returns (\r) that might have been pasted from Windows
-          sed -i 's/\r//g' smtp-tests/vars.conf
-          if [ ! -s smtp-tests/vars.conf ]; then
-            echo "Error: smtp-tests/vars.conf is empty. Check your MAIL_CONFIG_VARS variable."
+          sed -i 's/\r//g' .env
+          if [ ! -s .env ]; then
+            echo "Error: .env is empty. Check your MAIL_CONFIG_VARS variable."
             exit 1
           fi
+
       - name: Run SMTP tests
-        working-directory: smtp-tests
-        run: bash run.sh
+        run: make test
