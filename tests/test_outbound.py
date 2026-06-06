@@ -223,7 +223,7 @@ def test_outbound_submissions_authenticated_from_mismatch_1(mail_config, smtp_se
         assert code == 250
     except smtplib.SMTPResponseException as e:
         # If rejected, ensure it is a proper SMTP rejection error code
-        assert e.code in [501, 550, 554]
+        assert e.smtp_code in [501, 550, 554]
 
 
 def test_outbound_submissions_authenticated_from_mismatch_2(mail_config, smtp_sender):

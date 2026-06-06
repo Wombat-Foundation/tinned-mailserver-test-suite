@@ -50,14 +50,15 @@ context.check_hostname = False
 context.verify_mode = ssl.CERT_NONE
 
 # -------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 # PROBE 1: Port 465 (Outbound Submissions with implicit SSL)
 # -------------------------------------------------------------------------
 print("\n[PROBE 1] Outbound Submissions Port (Port 465 - Implicit TLS)")
 print("-" * 50)
 try:
-    print(f"Connecting to {SERVER}:465 with 5s timeout...")
+    print(f"Connecting to {SERVER}:465 with 15s timeout...")
     client = smtplib.SMTP_SSL(
-        SERVER, 465, context=context, local_hostname=HELO, timeout=5.0
+        SERVER, 465, context=context, local_hostname=HELO, timeout=15.0
     )
     print("✓ Successfully connected to Port 465.")
 
