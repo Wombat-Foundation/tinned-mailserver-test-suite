@@ -32,6 +32,11 @@ MAIN_ADDR = os.environ.get("SENDER_ADDRESS_MAIN", "test1@example.com")
 EXT_ADDR = os.environ.get("SENDER_ADDRESS_MAIN_TAG", "test1+extension@example.com")
 EXT_RECIPIENT = os.environ.get("RECIPIENT_ADDRESS", "test@example.com")
 
+def safe_str(val):
+    if isinstance(val, bytes):
+        return val.decode("utf-8", errors="ignore")
+    return str(val)
+
 print("=" * 70)
 print(f"DIAGNOSTIC REPORT FOR MAIL SERVER: {SERVER}")
 print("=" * 70)
@@ -47,7 +52,7 @@ context.verify_mode = ssl.CERT_NONE
 print("\n[PROBE 1] Outbound Submissions Port (Port 465 - Implicit TLS)")
 print("-" * 50)
 try:
-    print(f"Connecting to {SERVER}:465 with 5s timeout...")
+    print(f"Connecting to {SERVER}:465 with 15s timeout...")
     client = smtplib.SMTP_SSL(SERVER, 465, context=context, local_hostname=HELO, timeout=15.0)
     print("✓ Successfully connected to Port 465.")
 
@@ -68,14 +73,14 @@ try:
             try:
                 # Issue MAIL FROM
                 code, resp = client.mail(EXT_ADDR)
-                print(f"  -> Server response: {code} {resp.decode('utf-8', errors='ignore')}")
+                print(f"  -> Server response: {code} {safe_str(resp)}")
                 print("✓ Outbound plus-addressing (sub-addressing) is ALLOWED by the mail server.")
             except smtplib.SMTPResponseException as e:
                 print(f"  ✗ Outbound plus-addressing is REJECTED by the mail server.")
-                print(f"    Reason: {e.code} {e.message.decode('utf-8', errors='ignore')}")
+                print(f"    Reason: {e.smtp_code} {safe_str(e.smtp_error)}")
 
-        except smtplib.SMTPAuthenticationError as e:
-            print(f"  ✗ Authentication failed: {e.code} {e.message.decode('utf-8', errors='ignore')}")
+        except smtplib.SMTPResponseException as e:
+            print(f"  ✗ Authentication failed: {e.smtp_code} {safe_str(e.smtp_error)}")
     else:
         print("  - No SENDER_AUTH_USER and SENDER_AUTH_PASSWORD defined for login check.")
 
@@ -91,7 +96,7 @@ except Exception as e:
 print("\n[PROBE 2] Inbound SMTP Port (Port 25 - STARTTLS)")
 print("-" * 50)
 try:
-    print(f"Connecting to {SERVER}:25 with 5s timeout...")
+    print(f"Connecting to {SERVER}:25 with 15s timeout...")
     client = smtplib.SMTP(SERVER, 25, local_hostname=HELO, timeout=15.0)
     print("✓ Successfully connected to Port 25.")
 
@@ -105,13 +110,13 @@ try:
     try:
         client.mail(EXT_RECIPIENT)  # External sender
         code, resp = client.rcpt(test_rcpt) # Plus-addressed local recipient
-        print(f"  -> Server response to RCPT TO: {code} {resp.decode('utf-8', errors='ignore')}")
+        print(f"  -> Server response to RCPT TO: {code} {safe_str(resp)}")
         if code == 250:
             print("✓ Inbound plus-addressing (sub-addressing) is SUPPORTED for local delivery!")
         else:
             print("✗ Inbound plus-addressing is REJECTED or not supported by the mail server.")
     except smtplib.SMTPResponseException as e:
-         print(f"✗ Inbound plus-addressing check failed: {e.code} {e.message.decode('utf-8', errors='ignore')}")
+         print(f"✗ Inbound plus-addressing check failed: {e.smtp_code} {safe_str(e.smtp_error)}")
 
     # AV / Anti-Spam Rejection Probe
     print("Probing if inbound Anti-Virus/Anti-Spam actively rejects signature payloads...")
@@ -129,13 +134,13 @@ try:
         client.rcpt(MAIN_ADDR)
         # Try sending DATA
         code, resp = client.data(msg.as_bytes())
-        print(f"  -> GTUBE sent. Server response: {code} {resp.decode('utf-8', errors='ignore')}")
+        print(f"  -> GTUBE sent. Server response: {code} {safe_str(resp)}")
         if code == 250:
             print("  ℹ Inbound GTUBE (Spam) was ACCEPTED (No active session rejection, or filters are inactive/deliver-to-junk).")
         else:
             print("  ✓ Inbound GTUBE (Spam) was REJECTED during transaction.")
     except smtplib.SMTPResponseException as e:
-        print(f"  ✓ Inbound GTUBE (Spam) was REJECTED during transaction: {e.code} {e.message.decode('utf-8', errors='ignore')}")
+        print(f"  ✓ Inbound GTUBE (Spam) was REJECTED during transaction: {e.smtp_code} {safe_str(e.smtp_error)}")
 
     client.quit()
 except socket.timeout:
