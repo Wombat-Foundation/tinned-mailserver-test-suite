@@ -67,10 +67,10 @@ def _send_smtp_message(config, envelope_from, envelope_to, message, use_ssl=True
 
     if use_ssl:
         port = 465
-        client = smtplib.SMTP_SSL(server, port, context=context, local_hostname=helo, timeout=10.0)
+        client = smtplib.SMTP_SSL(server, port, context=context, local_hostname=helo, timeout=5.0)
     else:
         port = 25
-        client = smtplib.SMTP(server, port, local_hostname=helo, timeout=10.0)
+        client = smtplib.SMTP(server, port, local_hostname=helo, timeout=5.0)
         if use_starttls:
             client.starttls(context=context)
             client.ehlo(helo)

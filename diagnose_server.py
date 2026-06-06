@@ -52,8 +52,8 @@ context.verify_mode = ssl.CERT_NONE
 print("\n[PROBE 1] Outbound Submissions Port (Port 465 - Implicit TLS)")
 print("-" * 50)
 try:
-    print(f"Connecting to {SERVER}:465 with 15s timeout...")
-    client = smtplib.SMTP_SSL(SERVER, 465, context=context, local_hostname=HELO, timeout=15.0)
+    print(f"Connecting to {SERVER}:465 with 5s timeout...")
+    client = smtplib.SMTP_SSL(SERVER, 465, context=context, local_hostname=HELO, timeout=5.0)
     print("✓ Successfully connected to Port 465.")
 
     # EHLO Capabilities
@@ -96,8 +96,8 @@ except Exception as e:
 print("\n[PROBE 2] Inbound SMTP Port (Port 25 - STARTTLS)")
 print("-" * 50)
 try:
-    print(f"Connecting to {SERVER}:25 with 15s timeout...")
-    client = smtplib.SMTP(SERVER, 25, local_hostname=HELO, timeout=15.0)
+    print(f"Connecting to {SERVER}:25 with 5s timeout...")
+    client = smtplib.SMTP(SERVER, 25, local_hostname=HELO, timeout=5.0)
     print("✓ Successfully connected to Port 25.")
 
     client.starttls(context=context)
