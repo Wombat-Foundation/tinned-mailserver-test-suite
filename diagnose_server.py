@@ -1,8 +1,9 @@
 import os
-import ssl
 import smtplib
 import socket
+import ssl
 from email.message import EmailMessage
+
 from dotenv import load_dotenv
 
 # Load variables
@@ -14,7 +15,7 @@ if os.path.exists(VARS_CONF_PATH):
             if not line or line.startswith("#"):
                 continue
             if line.startswith("export "):
-                line = line[len("export "):]
+                line = line[len("export ") :]
             if "=" in line:
                 key, val = line.split("=", 1)
                 key = key.strip()
@@ -32,10 +33,12 @@ MAIN_ADDR = os.environ.get("SENDER_ADDRESS_MAIN", "test1@example.com")
 EXT_ADDR = os.environ.get("SENDER_ADDRESS_MAIN_TAG", "test1+extension@example.com")
 EXT_RECIPIENT = os.environ.get("RECIPIENT_ADDRESS", "test@example.com")
 
+
 def safe_str(val):
     if isinstance(val, bytes):
         return val.decode("utf-8", errors="ignore")
     return str(val)
+
 
 print("=" * 70)
 print(f"DIAGNOSTIC REPORT FOR MAIL SERVER: {SERVER}")
@@ -53,7 +56,9 @@ print("\n[PROBE 1] Outbound Submissions Port (Port 465 - Implicit TLS)")
 print("-" * 50)
 try:
     print(f"Connecting to {SERVER}:465 with 5s timeout...")
-    client = smtplib.SMTP_SSL(SERVER, 465, context=context, local_hostname=HELO, timeout=5.0)
+    client = smtplib.SMTP_SSL(
+        SERVER, 465, context=context, local_hostname=HELO, timeout=5.0
+    )
     print("✓ Successfully connected to Port 465.")
 
     # EHLO Capabilities
@@ -69,12 +74,16 @@ try:
             print(f"✓ Authentication with user '{USER}' succeeded.")
 
             # Outbound Plus Address Probe
-            print(f"Probing outbound plus-addressing support (MAIL FROM: <{EXT_ADDR}>)...")
+            print(
+                f"Probing outbound plus-addressing support (MAIL FROM: <{EXT_ADDR}>)..."
+            )
             try:
                 # Issue MAIL FROM
                 code, resp = client.mail(EXT_ADDR)
                 print(f"  -> Server response: {code} {safe_str(resp)}")
-                print("✓ Outbound plus-addressing (sub-addressing) is ALLOWED by the mail server.")
+                print(
+                    "✓ Outbound plus-addressing (sub-addressing) is ALLOWED by the mail server."
+                )
             except smtplib.SMTPResponseException as e:
                 print(f"  ✗ Outbound plus-addressing is REJECTED by the mail server.")
                 print(f"    Reason: {e.smtp_code} {safe_str(e.smtp_error)}")
@@ -82,11 +91,15 @@ try:
         except smtplib.SMTPResponseException as e:
             print(f"  ✗ Authentication failed: {e.smtp_code} {safe_str(e.smtp_error)}")
     else:
-        print("  - No SENDER_AUTH_USER and SENDER_AUTH_PASSWORD defined for login check.")
+        print(
+            "  - No SENDER_AUTH_USER and SENDER_AUTH_PASSWORD defined for login check."
+        )
 
     client.quit()
 except socket.timeout:
-    print("✗ Connection to Port 465 TIMED OUT (Blocked by local firewall, ISP, or offline server).")
+    print(
+        "✗ Connection to Port 465 TIMED OUT (Blocked by local firewall, ISP, or offline server)."
+    )
 except Exception as e:
     print(f"✗ Connection to Port 465 failed: {e}")
 
@@ -109,24 +122,34 @@ try:
     print(f"Probing inbound plus-addressing support (RCPT TO: <{test_rcpt}>)...")
     try:
         client.mail(EXT_RECIPIENT)  # External sender
-        code, resp = client.rcpt(test_rcpt) # Plus-addressed local recipient
+        code, resp = client.rcpt(test_rcpt)  # Plus-addressed local recipient
         print(f"  -> Server response to RCPT TO: {code} {safe_str(resp)}")
         if code == 250:
-            print("✓ Inbound plus-addressing (sub-addressing) is SUPPORTED for local delivery!")
+            print(
+                "✓ Inbound plus-addressing (sub-addressing) is SUPPORTED for local delivery!"
+            )
         else:
-            print("✗ Inbound plus-addressing is REJECTED or not supported by the mail server.")
+            print(
+                "✗ Inbound plus-addressing is REJECTED or not supported by the mail server."
+            )
     except smtplib.SMTPResponseException as e:
-         print(f"✗ Inbound plus-addressing check failed: {e.smtp_code} {safe_str(e.smtp_error)}")
+        print(
+            f"✗ Inbound plus-addressing check failed: {e.smtp_code} {safe_str(e.smtp_error)}"
+        )
 
     # AV / Anti-Spam Rejection Probe
-    print("Probing if inbound Anti-Virus/Anti-Spam actively rejects signature payloads...")
+    print(
+        "Probing if inbound Anti-Virus/Anti-Spam actively rejects signature payloads..."
+    )
     # Attempt to send GTUBE
     try:
         msg = EmailMessage()
         msg["Subject"] = "Diagnostics probe - GTUBE"
         msg["To"] = MAIN_ADDR
         msg["From"] = EXT_RECIPIENT
-        msg.set_content("XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X")
+        msg.set_content(
+            "XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X"
+        )
 
         # Reset transaction
         client.rset()
@@ -136,17 +159,25 @@ try:
         code, resp = client.data(msg.as_bytes())
         print(f"  -> GTUBE sent. Server response: {code} {safe_str(resp)}")
         if code == 250:
-            print("  ℹ Inbound GTUBE (Spam) was ACCEPTED (No active session rejection, or filters are inactive/deliver-to-junk).")
+            print(
+                "  ℹ Inbound GTUBE (Spam) was ACCEPTED (No active session rejection, or filters are inactive/deliver-to-junk)."
+            )
         else:
             print("  ✓ Inbound GTUBE (Spam) was REJECTED during transaction.")
     except smtplib.SMTPResponseException as e:
-        print(f"  ✓ Inbound GTUBE (Spam) was REJECTED during transaction: {e.smtp_code} {safe_str(e.smtp_error)}")
+        print(
+            f"  ✓ Inbound GTUBE (Spam) was REJECTED during transaction: {e.smtp_code} {safe_str(e.smtp_error)}"
+        )
 
     client.quit()
 except socket.timeout:
     print("✗ Connection to Port 25 TIMED OUT.")
-    print("  ℹ Note: Port 25 is heavily blocked by residential ISPs and cloud providers (like AWS, Azure, Google Cloud).")
-    print("  ℹ If running this locally or in a restricted VM, please ensure outbound SMTP port 25 is allowed.")
+    print(
+        "  ℹ Note: Port 25 is heavily blocked by residential ISPs and cloud providers (like AWS, Azure, Google Cloud)."
+    )
+    print(
+        "  ℹ If running this locally or in a restricted VM, please ensure outbound SMTP port 25 is allowed."
+    )
 except Exception as e:
     print(f"✗ Connection to Port 25 failed: {e}")
 

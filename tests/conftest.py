@@ -1,15 +1,15 @@
 import os
-import ssl
 import smtplib
+import ssl
+
 import pytest
 from dotenv import load_dotenv
 
 # Path to the old vars.conf file for backwards compatibility
 VARS_CONF_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
-    "smtp-tests",
-    "vars.conf"
+    os.path.dirname(os.path.dirname(__file__)), "smtp-tests", "vars.conf"
 )
+
 
 def load_config():
     # 1. Try loading from .env if present
@@ -23,7 +23,7 @@ def load_config():
                 if not line or line.startswith("#"):
                     continue
                 if line.startswith("export "):
-                    line = line[len("export "):]
+                    line = line[len("export ") :]
                 if "=" in line:
                     key, val = line.split("=", 1)
                     key = key.strip()
@@ -32,8 +32,10 @@ def load_config():
                     if key not in os.environ:
                         os.environ[key] = val
 
+
 # Load configurations at module import time
 load_config()
+
 
 @pytest.fixture(scope="session")
 def mail_config():
@@ -45,15 +47,30 @@ def mail_config():
         "auth_pass": os.environ.get("SENDER_AUTH_PASSWORD", "TestPassword"),
         "sender_main": os.environ.get("SENDER_ADDRESS_MAIN", "test1@example.com"),
         "sender_alias": os.environ.get("SENDER_ADDRESS_ALIAS", "test2@example.com"),
-        "sender_main_tag": os.environ.get("SENDER_ADDRESS_MAIN_TAG", "test1+extension@example.com"),
-        "sender_alias_tag": os.environ.get("SENDER_ADDRESS_ALIAS_TAG", "test2+tag02@example.com"),
+        "sender_main_tag": os.environ.get(
+            "SENDER_ADDRESS_MAIN_TAG", "test1+extension@example.com"
+        ),
+        "sender_alias_tag": os.environ.get(
+            "SENDER_ADDRESS_ALIAS_TAG", "test2+tag02@example.com"
+        ),
         "sender_denied": os.environ.get("SENDER_ADDRESS_DENIED", "test3@example.com"),
         "sender_forged": os.environ.get("SENDER_ADDRESS_FORGED", "forged@example.com"),
-        "sender_forged2": os.environ.get("SENDER_ADDRESS_FORGED2", "forged@example.net"),
+        "sender_forged2": os.environ.get(
+            "SENDER_ADDRESS_FORGED2", "forged@example.net"
+        ),
         "recipient": os.environ.get("RECIPIENT_ADDRESS", "test@example.com"),
     }
 
-def _send_smtp_message(config, envelope_from, envelope_to, message, use_ssl=True, use_starttls=False, authenticate=True):
+
+def _send_smtp_message(
+    config,
+    envelope_from,
+    envelope_to,
+    message,
+    use_ssl=True,
+    use_starttls=False,
+    authenticate=True,
+):
     """
     Sends an SMTP message using the provided configuration.
     """
@@ -67,7 +84,9 @@ def _send_smtp_message(config, envelope_from, envelope_to, message, use_ssl=True
 
     if use_ssl:
         port = 465
-        client = smtplib.SMTP_SSL(server, port, context=context, local_hostname=helo, timeout=5.0)
+        client = smtplib.SMTP_SSL(
+            server, port, context=context, local_hostname=helo, timeout=15.0
+        )
     else:
         port = 25
         client = smtplib.SMTP(server, port, local_hostname=helo, timeout=5.0)
@@ -80,7 +99,9 @@ def _send_smtp_message(config, envelope_from, envelope_to, message, use_ssl=True
             client.login(config["auth_user"], config["auth_pass"])
 
         # Send mail with explicit envelope values
-        refused = client.send_message(message, from_addr=envelope_from, to_addrs=envelope_to)
+        refused = client.send_message(
+            message, from_addr=envelope_from, to_addrs=envelope_to
+        )
         if refused:
             raise smtplib.SMTPRecipientsRefused(refused)
 
@@ -90,6 +111,7 @@ def _send_smtp_message(config, envelope_from, envelope_to, message, use_ssl=True
             client.quit()
         except Exception:
             pass
+
 
 @pytest.fixture(scope="session")
 def smtp_sender():

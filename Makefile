@@ -13,13 +13,13 @@ define print_success
 	printf "\033[1;34m✓ %s\033[0m\n" "$(1)"
 endef
 
-# LINT_LOCS_PY ?= $$(git ls-files '*.py')
+LINT_LOCS_PY ?= $$(git ls-files '*.py')
 
 .PHONY: format
 format: ##H Format source files
 	-shfmt -w $$(git ls-files '*.sh')
-# 	-black $(LINT_LOCS_PY)
-# 	-isort $(LINT_LOCS_PY)
+	-black $(LINT_LOCS_PY)
+	-isort $(LINT_LOCS_PY)
 	-prettier -w .
 	-pre-commit run --all-files
 

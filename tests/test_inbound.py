@@ -1,9 +1,11 @@
 import os
 import smtplib
-import pytest
 from email.message import EmailMessage
 
+import pytest
+
 PAYLOAD_DIR = os.path.join(os.path.dirname(__file__), "payload_files")
+
 
 def read_payload(filename):
     path = os.path.join(PAYLOAD_DIR, filename)
@@ -19,7 +21,7 @@ def test_201_inbound_eicar_txt(mail_config, smtp_sender):
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Inbound EICAR.TXT"
     msg["To"] = mail_config["sender_main"]  # Local recipient
-    msg["From"] = mail_config["recipient"]    # External sender
+    msg["From"] = mail_config["recipient"]  # External sender
     msg.set_content(
         "Hi,\n\n"
         "This is a test email containing the EICAR test signature in an attachment.\n"
@@ -33,7 +35,7 @@ def test_201_inbound_eicar_txt(mail_config, smtp_sender):
         payload_data,
         maintype="application",
         subtype="octet-stream",
-        filename="EICAR.TXT"
+        filename="EICAR.TXT",
     )
 
     # Inbound tests: port 25, STARTTLS, no authentication
@@ -50,7 +52,13 @@ def test_201_inbound_eicar_txt(mail_config, smtp_sender):
 
     err = exc_info.value
     # A rejection code should be 550, 554, or any error in SMTP block
-    assert err.code in [550, 554, 501, 451, 452], f"Unexpected rejection SMTP code: {err.code}"
+    assert err.smtp_code in [
+        550,
+        554,
+        501,
+        451,
+        452,
+    ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
 def test_202_inbound_gtube(mail_config, smtp_sender):
@@ -61,7 +69,7 @@ def test_202_inbound_gtube(mail_config, smtp_sender):
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Inbound GTUBE"
     msg["To"] = mail_config["sender_main"]  # Local recipient
-    msg["From"] = mail_config["recipient"]    # External sender
+    msg["From"] = mail_config["recipient"]  # External sender
 
     # GTUBE string must be on a line by itself
     msg.set_content(
@@ -80,7 +88,13 @@ def test_202_inbound_gtube(mail_config, smtp_sender):
         )
 
     err = exc_info.value
-    assert err.code in [550, 554, 501, 451, 452], f"Unexpected rejection SMTP code: {err.code}"
+    assert err.smtp_code in [
+        550,
+        554,
+        501,
+        451,
+        452,
+    ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
 def test_203_inbound_eicar_zip(mail_config, smtp_sender):
@@ -91,7 +105,7 @@ def test_203_inbound_eicar_zip(mail_config, smtp_sender):
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Inbound EICAR.COM-ZIP"
     msg["To"] = mail_config["sender_main"]  # Local recipient
-    msg["From"] = mail_config["recipient"]    # External sender
+    msg["From"] = mail_config["recipient"]  # External sender
     msg.set_content(
         "Hi,\n\n"
         "This is a test email containing the EICAR test signature in a ZIP attachment.\n"
@@ -105,7 +119,7 @@ def test_203_inbound_eicar_zip(mail_config, smtp_sender):
         payload_data,
         maintype="application",
         subtype="zip",
-        filename="EICAR.COM-ZIP.zip"
+        filename="EICAR.COM-ZIP.zip",
     )
 
     with pytest.raises(smtplib.SMTPResponseException) as exc_info:
@@ -120,7 +134,13 @@ def test_203_inbound_eicar_zip(mail_config, smtp_sender):
         )
 
     err = exc_info.value
-    assert err.code in [550, 554, 501, 451, 452], f"Unexpected rejection SMTP code: {err.code}"
+    assert err.smtp_code in [
+        550,
+        554,
+        501,
+        451,
+        452,
+    ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
 def test_204_inbound_eicar_com(mail_config, smtp_sender):
@@ -131,7 +151,7 @@ def test_204_inbound_eicar_com(mail_config, smtp_sender):
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Inbound EICAR.COM"
     msg["To"] = mail_config["sender_main"]  # Local recipient
-    msg["From"] = mail_config["recipient"]    # External sender
+    msg["From"] = mail_config["recipient"]  # External sender
     msg.set_content(
         "Hi,\n\n"
         "This is a test email containing the EICAR test signature as a raw .COM file.\n"
@@ -145,7 +165,7 @@ def test_204_inbound_eicar_com(mail_config, smtp_sender):
         payload_data,
         maintype="application",
         subtype="octet-stream",
-        filename="EICAR.COM"
+        filename="EICAR.COM",
     )
 
     with pytest.raises(smtplib.SMTPResponseException) as exc_info:
@@ -160,7 +180,13 @@ def test_204_inbound_eicar_com(mail_config, smtp_sender):
         )
 
     err = exc_info.value
-    assert err.code in [550, 554, 501, 451, 452], f"Unexpected rejection SMTP code: {err.code}"
+    assert err.smtp_code in [
+        550,
+        554,
+        501,
+        451,
+        452,
+    ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
 def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender):
@@ -171,7 +197,7 @@ def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender):
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Inbound EICAR.COM2-ZIP"
     msg["To"] = mail_config["sender_main"]  # Local recipient
-    msg["From"] = mail_config["recipient"]    # External sender
+    msg["From"] = mail_config["recipient"]  # External sender
     msg.set_content(
         "Hi,\n\n"
         "This is a test email containing the EICAR test signature inside a nested ZIP file (double compressed).\n"
@@ -185,7 +211,7 @@ def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender):
         payload_data,
         maintype="application",
         subtype="zip",
-        filename="EICAR.COM2-ZIP.zip"
+        filename="EICAR.COM2-ZIP.zip",
     )
 
     with pytest.raises(smtplib.SMTPResponseException) as exc_info:
@@ -200,4 +226,10 @@ def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender):
         )
 
     err = exc_info.value
-    assert err.code in [550, 554, 501, 451, 452], f"Unexpected rejection SMTP code: {err.code}"
+    assert err.smtp_code in [
+        550,
+        554,
+        501,
+        451,
+        452,
+    ], f"Unexpected rejection SMTP code: {err.smtp_code}"

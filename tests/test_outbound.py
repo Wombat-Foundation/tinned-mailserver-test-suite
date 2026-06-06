@@ -1,6 +1,8 @@
 import smtplib
-import pytest
 from email.message import EmailMessage
+
+import pytest
+
 
 def test_101_outbound_submissions_authenticated_from_main(mail_config, smtp_sender):
     """
@@ -73,7 +75,9 @@ def test_103_outbound_submissions_authenticated_from_main_tag(mail_config, smtp_
     both success (250) and a 501 sender matching restriction gracefully.
     """
     msg = EmailMessage()
-    msg["Subject"] = "Swaks SMTP test - Sender authenticated main address with plus extension"
+    msg["Subject"] = (
+        "Swaks SMTP test - Sender authenticated main address with plus extension"
+    )
     msg["To"] = mail_config["recipient"]
     msg["From"] = mail_config["sender_main_tag"]
     msg.set_content(
@@ -94,20 +98,31 @@ def test_103_outbound_submissions_authenticated_from_main_tag(mail_config, smtp_
         assert "accepted" in response.lower()
     except smtplib.SMTPResponseException as e:
         # Gracefully handle Stalwart's default strict mustMatchSender behavior
-        if e.code == 501 and b"not allowed" in e.message.lower():
-            pytest.skip("Sub-addressing sender rejected by Stalwart's default mustMatchSender policy")
+        err_msg = (
+            e.smtp_error.decode("utf-8", errors="ignore")
+            if isinstance(e.smtp_error, bytes)
+            else str(e.smtp_error)
+        )
+        if e.smtp_code == 501 and "not allowed" in err_msg.lower():
+            pytest.skip(
+                "Sub-addressing sender rejected by Stalwart's default mustMatchSender policy"
+            )
         else:
             raise
 
 
-def test_104_outbound_submissions_authenticated_from_alias_tag(mail_config, smtp_sender):
+def test_104_outbound_submissions_authenticated_from_alias_tag(
+    mail_config, smtp_sender
+):
     """
     Test 104: Outbound message through submissions port (TLS, port 465) with plus extension on an alias.
     If mustMatchSender is strictly enabled on the server, this might get rejected. We handle
     both success (250) and a 501 sender matching restriction gracefully.
     """
     msg = EmailMessage()
-    msg["Subject"] = "Swaks SMTP test - Sender authenticated alias address with plus extension"
+    msg["Subject"] = (
+        "Swaks SMTP test - Sender authenticated alias address with plus extension"
+    )
     msg["To"] = mail_config["recipient"]
     msg["From"] = mail_config["sender_alias_tag"]
     msg.set_content(
@@ -128,8 +143,15 @@ def test_104_outbound_submissions_authenticated_from_alias_tag(mail_config, smtp
         assert "accepted" in response.lower()
     except smtplib.SMTPResponseException as e:
         # Gracefully handle Stalwart's default strict mustMatchSender behavior
-        if e.code == 501 and b"not allowed" in e.message.lower():
-            pytest.skip("Sub-addressing alias sender rejected by Stalwart's default mustMatchSender policy")
+        err_msg = (
+            e.smtp_error.decode("utf-8", errors="ignore")
+            if isinstance(e.smtp_error, bytes)
+            else str(e.smtp_error)
+        )
+        if e.smtp_code == 501 and "not allowed" in err_msg.lower():
+            pytest.skip(
+                "Sub-addressing alias sender rejected by Stalwart's default mustMatchSender policy"
+            )
         else:
             raise
 
@@ -160,9 +182,17 @@ def test_outbound_submissions_authenticated_from_disallowed(mail_config, smtp_se
         )
 
     err = exc_info.value
-    assert err.code in [501, 550, 554]
-    err_msg = err.message.decode("utf-8", errors="ignore").lower()
-    assert any(term in err_msg for term in ["not allowed", "denied", "sender", "spoof", "5.5.4"])
+    assert err.smtp_code in [501, 550, 554]
+    err_msg = (
+        err.smtp_error.decode("utf-8", errors="ignore")
+        if isinstance(err.smtp_error, bytes)
+        else str(err.smtp_error)
+    )
+    err_msg = err_msg.lower()
+    assert any(
+        term in err_msg
+        for term in ["not allowed", "denied", "sender", "spoof", "5.5.4"]
+    )
 
 
 def test_outbound_submissions_authenticated_from_mismatch_1(mail_config, smtp_sender):
@@ -204,7 +234,9 @@ def test_outbound_submissions_authenticated_from_mismatch_2(mail_config, smtp_se
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Sender mismatch / forged Sender 2"
     msg["To"] = mail_config["recipient"]
-    msg["From"] = mail_config["sender_forged2"]  # Forged header From: admin@microsoft.com
+    msg["From"] = mail_config[
+        "sender_forged2"
+    ]  # Forged header From: admin@microsoft.com
     msg.set_content(
         "Hi,\n\n"
         "This is a test email sent via SMTP using Python.\n"
@@ -221,4 +253,4 @@ def test_outbound_submissions_authenticated_from_mismatch_2(mail_config, smtp_se
         )
         assert code == 250
     except smtplib.SMTPResponseException as e:
-        assert e.code in [501, 550, 554]
+        assert e.smtp_code in [501, 550, 554]
