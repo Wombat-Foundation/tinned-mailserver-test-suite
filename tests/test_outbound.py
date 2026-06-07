@@ -6,8 +6,8 @@ import pytest
 
 def test_101_outbound_submissions_authenticated_from_main(mail_config, smtp_sender):
     """
-    Test 101: Successful outbound message through submissions port (TLS, port 465).
-    Sends email with the user's main email address.
+    Test 101: Successful outbound message through submissions port
+    (TLS, port 465). Sends email with the user's main email address.
     """
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Sender authenticated main address"
@@ -18,8 +18,8 @@ def test_101_outbound_submissions_authenticated_from_main(mail_config, smtp_send
         "This is a test email sent via SMTP using Python.\n"
         "This test email is intended to test the following situation.\n\n"
         "* Client connects via submissions port (TLS, port 465)\n"
-        "* Client authenticates via PLAIN/LOGIN authentication (user + password)\n"
-        "* Client sends email to external recipient address with main address\n\n"
+        "* Client authenticates via PLAIN/LOGIN authentication\n"
+        "* Client sends email to external recipient with main address\n\n"
         "This message should be accepted by the mailserver.\n\n"
         "Best regards,\n"
         "SMTP test suite\n"
@@ -38,8 +38,8 @@ def test_101_outbound_submissions_authenticated_from_main(mail_config, smtp_send
 
 def test_102_outbound_submissions_authenticated_from_alias(mail_config, smtp_sender):
     """
-    Test 102: Successful outbound message through submissions port (TLS, port 465).
-    Sends email with an alias email address to test alias handling for outbound email messages.
+    Test 102: Successful outbound message through submissions port
+    (TLS, port 465). Sends email with an alias email address.
     """
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Sender authenticated alias address"
@@ -50,8 +50,8 @@ def test_102_outbound_submissions_authenticated_from_alias(mail_config, smtp_sen
         "This is a test email sent via SMTP using Python.\n"
         "This test email is intended to test the following situation.\n\n"
         "* Client connects via submissions port (TLS, port 465)\n"
-        "* Client authenticates via PLAIN/LOGIN authentication (user + password)\n"
-        "* Client sends email to external recipient address with alias address\n\n"
+        "* Client authenticates via PLAIN/LOGIN authentication\n"
+        "* Client sends email to external recipient with alias address\n\n"
         "This message should be accepted by the mailserver.\n\n"
         "Best regards,\n"
         "SMTP test suite\n"
@@ -70,20 +70,17 @@ def test_102_outbound_submissions_authenticated_from_alias(mail_config, smtp_sen
 
 def test_103_outbound_submissions_authenticated_from_main_tag(mail_config, smtp_sender):
     """
-    Test 103: Outbound message through submissions port (TLS, port 465) with plus extension.
-    If mustMatchSender is strictly enabled on the server, this might get rejected. We handle
-    both success (250) and a 501 sender matching restriction gracefully.
+    Test 103: Outbound message through submissions port (TLS, port 465)
+    with plus extension. Handles strict sender matching gracefully.
     """
     msg = EmailMessage()
-    msg["Subject"] = (
-        "Swaks SMTP test - Sender authenticated main address with plus extension"
-    )
+    msg["Subject"] = "Swaks SMTP test - Sender authenticated main address with tag"
     msg["To"] = mail_config["recipient"]
     msg["From"] = mail_config["sender_main_tag"]
     msg.set_content(
         "Hi,\n\n"
         "This is a test email sent via SMTP using Python.\n"
-        "This test email is intended to test sending from a plus-tagged sender address.\n"
+        "This test email is intended to test plus-tagged senders.\n"
     )
 
     try:
@@ -104,9 +101,7 @@ def test_103_outbound_submissions_authenticated_from_main_tag(mail_config, smtp_
             else str(e.smtp_error)
         )
         if e.smtp_code == 501 and "not allowed" in err_msg.lower():
-            pytest.skip(
-                "Sub-addressing sender rejected by Stalwart's default mustMatchSender policy"
-            )
+            pytest.skip("Sub-addressing sender rejected by mustMatchSender")
         else:
             raise
 
@@ -115,20 +110,17 @@ def test_104_outbound_submissions_authenticated_from_alias_tag(
     mail_config, smtp_sender
 ):
     """
-    Test 104: Outbound message through submissions port (TLS, port 465) with plus extension on an alias.
-    If mustMatchSender is strictly enabled on the server, this might get rejected. We handle
-    both success (250) and a 501 sender matching restriction gracefully.
+    Test 104: Outbound message through submissions port (TLS, port 465)
+    with plus extension on an alias. Handles strict sender matching gracefully.
     """
     msg = EmailMessage()
-    msg["Subject"] = (
-        "Swaks SMTP test - Sender authenticated alias address with plus extension"
-    )
+    msg["Subject"] = "Swaks SMTP test - Sender authenticated alias address with tag"
     msg["To"] = mail_config["recipient"]
     msg["From"] = mail_config["sender_alias_tag"]
     msg.set_content(
         "Hi,\n\n"
         "This is a test email sent via SMTP using Python.\n"
-        "This test email is intended to test sending from a plus-tagged alias address.\n"
+        "This test email is intended to test plus-tagged alias senders.\n"
     )
 
     try:
@@ -149,18 +141,15 @@ def test_104_outbound_submissions_authenticated_from_alias_tag(
             else str(e.smtp_error)
         )
         if e.smtp_code == 501 and "not allowed" in err_msg.lower():
-            pytest.skip(
-                "Sub-addressing alias sender rejected by Stalwart's default mustMatchSender policy"
-            )
+            pytest.skip("Sub-addressing alias sender rejected by mustMatchSender")
         else:
             raise
 
 
 def test_outbound_submissions_authenticated_from_disallowed(mail_config, smtp_sender):
     """
-    Test: Attempting to send from an unauthorized/disallowed address while authenticated.
+    Test: Attempting to send from an unauthorized/disallowed address.
     This MUST be rejected by the mailserver under test.
-    We accept rejection code 501 (used by Stalwart at MAIL FROM stage) or 550/554 (used by other servers).
     """
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Sender disallowed Sender"
@@ -169,7 +158,7 @@ def test_outbound_submissions_authenticated_from_disallowed(mail_config, smtp_se
     msg.set_content(
         "Hi,\n\n"
         "This is a test email sent via SMTP using Python.\n"
-        "This message should be rejected by the mailserver due to a disallowed sender address.\n"
+        "This message should be rejected due to disallowed sender.\n"
     )
 
     with pytest.raises(smtplib.SMTPResponseException) as exc_info:
@@ -197,56 +186,51 @@ def test_outbound_submissions_authenticated_from_disallowed(mail_config, smtp_se
 
 def test_outbound_submissions_authenticated_from_mismatch_1(mail_config, smtp_sender):
     """
-    Test: Authenticate, send envelope MAIL FROM as the legitimate user address, but
+    Test: Authenticate, send envelope MAIL FROM as the user, but
     use a forged header From (ceo@google.com).
-    If the server's policy is lax on outgoing header alignment, this may succeed (returns 250).
-    If strict alignment is enforced, it will reject (raises SMTPResponseException). Both are valid.
     """
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Sender mismatch / forged Sender 1"
     msg["To"] = mail_config["recipient"]
-    msg["From"] = mail_config["sender_forged"]  # Forged header From: ceo@google.com
+    msg["From"] = mail_config["sender_forged"]  # Forged header From
     msg.set_content(
         "Hi,\n\n"
         "This is a test email sent via SMTP using Python.\n"
-        "This message tests if envelope MAIL FROM and DATA From can mismatch.\n"
+        "This message tests envelope and header From mismatches.\n"
     )
 
     try:
         code, response = smtp_sender(
             config=mail_config,
-            envelope_from=mail_config["sender_main"],  # Legitimate envelope MAIL FROM
+            envelope_from=mail_config["sender_main"],
             envelope_to=mail_config["recipient"],
             message=msg,
             use_ssl=True,
         )
         assert code == 250
     except smtplib.SMTPResponseException as e:
-        # If rejected, ensure it is a proper SMTP rejection error code
         assert e.smtp_code in [501, 550, 554]
 
 
 def test_outbound_submissions_authenticated_from_mismatch_2(mail_config, smtp_sender):
     """
-    Test: Authenticate, send envelope MAIL FROM as the legitimate user address, but
+    Test: Authenticate, send envelope MAIL FROM as the user, but
     use a forged header From (admin@microsoft.com).
     """
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Sender mismatch / forged Sender 2"
     msg["To"] = mail_config["recipient"]
-    msg["From"] = mail_config[
-        "sender_forged2"
-    ]  # Forged header From: admin@microsoft.com
+    msg["From"] = mail_config["sender_forged2"]  # Forged header From
     msg.set_content(
         "Hi,\n\n"
         "This is a test email sent via SMTP using Python.\n"
-        "This message tests if envelope MAIL FROM and DATA From can mismatch.\n"
+        "This message tests envelope and header From mismatches.\n"
     )
 
     try:
         code, response = smtp_sender(
             config=mail_config,
-            envelope_from=mail_config["sender_main"],  # Legitimate envelope MAIL FROM
+            envelope_from=mail_config["sender_main"],
             envelope_to=mail_config["recipient"],
             message=msg,
             use_ssl=True,

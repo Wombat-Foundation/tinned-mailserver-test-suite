@@ -23,7 +23,8 @@ def load_config():
                 if not line or line.startswith("#"):
                     continue
                 if line.startswith("export "):
-                    line = line[len("export ") :]
+                    n_exports = len("export ")
+                    line = line[n_exports:]
                 if "=" in line:
                     key, val = line.split("=", 1)
                     key = key.strip()
@@ -77,7 +78,8 @@ def _send_smtp_message(
     server = config["server_name"]
     helo = config["helo_name"]
 
-    # SSL Context with certificate verification relaxed for testing environments (e.g. self-signed certs)
+    # SSL Context with certificate verification relaxed for testing
+    # environments (e.g. self-signed certs)
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE

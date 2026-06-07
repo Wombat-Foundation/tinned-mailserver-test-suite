@@ -15,8 +15,8 @@ def read_payload(filename):
 
 def test_201_inbound_eicar_txt(mail_config, smtp_sender):
     """
-    Test 201: Inbound message containing the EICAR test signature in a text attachment.
-    Expects the mail server to reject the email with an SMTP error code (e.g. 550, 554).
+    Test 201: Inbound message containing the EICAR test signature
+    in a text attachment. Expects the mail server to reject the email.
     """
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Inbound EICAR.TXT"
@@ -24,9 +24,10 @@ def test_201_inbound_eicar_txt(mail_config, smtp_sender):
     msg["From"] = mail_config["recipient"]  # External sender
     msg.set_content(
         "Hi,\n\n"
-        "This is a test email containing the EICAR test signature in an attachment.\n"
-        "It is expected to be rejected by the mail server's Anti-Virus filter.\n\n"
-        "Best regards,\n"
+        "This is a test email containing the EICAR test signature "
+        "in an attachment.\n"
+        "It is expected to be rejected by the mail server's Anti-Virus filter."
+        "\n\nBest regards,\n"
         "Test Suite\n"
     )
 
@@ -51,7 +52,6 @@ def test_201_inbound_eicar_txt(mail_config, smtp_sender):
         )
 
     err = exc_info.value
-    # A rejection code should be 550, 554, or any error in SMTP block
     assert err.smtp_code in [
         550,
         554,
@@ -63,7 +63,7 @@ def test_201_inbound_eicar_txt(mail_config, smtp_sender):
 
 def test_202_inbound_gtube(mail_config, smtp_sender):
     """
-    Test 202: Inbound message containing the GTUBE (Generic Test for Unsolicited Bulk Email) string.
+    Test 202: Inbound message containing the GTUBE string.
     Expects the mail server to reject the email as spam.
     """
     msg = EmailMessage()
@@ -72,9 +72,8 @@ def test_202_inbound_gtube(mail_config, smtp_sender):
     msg["From"] = mail_config["recipient"]  # External sender
 
     # GTUBE string must be on a line by itself
-    msg.set_content(
-        "XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X"
-    )
+    gtube = "XJS*C4JDBQADN1.NSBN3*2IDNEN*" "GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X"
+    msg.set_content(gtube)
 
     with pytest.raises(smtplib.SMTPResponseException) as exc_info:
         smtp_sender(
@@ -99,8 +98,8 @@ def test_202_inbound_gtube(mail_config, smtp_sender):
 
 def test_203_inbound_eicar_zip(mail_config, smtp_sender):
     """
-    Test 203: Inbound message containing the EICAR test signature inside a ZIP file.
-    Expects the mail server to reject the email with an SMTP error code.
+    Test 203: Inbound message containing the EICAR test signature
+    inside a ZIP file. Expects the mail server to reject the email.
     """
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Inbound EICAR.COM-ZIP"
@@ -108,9 +107,10 @@ def test_203_inbound_eicar_zip(mail_config, smtp_sender):
     msg["From"] = mail_config["recipient"]  # External sender
     msg.set_content(
         "Hi,\n\n"
-        "This is a test email containing the EICAR test signature in a ZIP attachment.\n"
-        "It is expected to be rejected by the mail server's Anti-Virus filter.\n\n"
-        "Best regards,\n"
+        "This is a test email containing the EICAR test signature "
+        "in a ZIP attachment.\n"
+        "It is expected to be rejected by the mail server's Anti-Virus filter."
+        "\n\nBest regards,\n"
         "Test Suite\n"
     )
 
@@ -145,8 +145,8 @@ def test_203_inbound_eicar_zip(mail_config, smtp_sender):
 
 def test_204_inbound_eicar_com(mail_config, smtp_sender):
     """
-    Test 204: Inbound message containing the EICAR test signature as a raw .COM file attachment.
-    Expects the mail server to reject the email with an SMTP error code.
+    Test 204: Inbound message containing the EICAR test signature
+    as a raw .COM file attachment. Expects the mail server to reject.
     """
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Inbound EICAR.COM"
@@ -154,8 +154,10 @@ def test_204_inbound_eicar_com(mail_config, smtp_sender):
     msg["From"] = mail_config["recipient"]  # External sender
     msg.set_content(
         "Hi,\n\n"
-        "This is a test email containing the EICAR test signature as a raw .COM file.\n"
-        "It is expected to be rejected by the mail server's Anti-Virus or File-Type filter.\n\n"
+        "This is a test email containing the EICAR test signature "
+        "as a raw .COM file.\n"
+        "It is expected to be rejected by the mail server's "
+        "Anti-Virus or File-Type filter.\n\n"
         "Best regards,\n"
         "Test Suite\n"
     )
@@ -191,8 +193,8 @@ def test_204_inbound_eicar_com(mail_config, smtp_sender):
 
 def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender):
     """
-    Test 205: Inbound message containing the EICAR test signature inside a nested ZIP file (double compressed).
-    Expects the mail server to reject the email if recursive scanning is enabled.
+    Test 205: Inbound message containing the EICAR test signature
+    inside a nested ZIP file (double compressed). Expects rejection.
     """
     msg = EmailMessage()
     msg["Subject"] = "Swaks SMTP test - Inbound EICAR.COM2-ZIP"
@@ -200,8 +202,10 @@ def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender):
     msg["From"] = mail_config["recipient"]  # External sender
     msg.set_content(
         "Hi,\n\n"
-        "This is a test email containing the EICAR test signature inside a nested ZIP file (double compressed).\n"
-        "It is expected to be rejected by the mail server's Anti-Virus filter if recursive scanning is enabled.\n\n"
+        "This is a test email containing the EICAR test signature "
+        "inside a nested ZIP file (double compressed).\n"
+        "It is expected to be rejected by the mail server's "
+        "Anti-Virus filter if recursive scanning is enabled.\n\n"
         "Best regards,\n"
         "Test Suite\n"
     )
