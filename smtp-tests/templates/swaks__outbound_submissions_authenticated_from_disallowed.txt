@@ -1,6 +1,6 @@
 Hi,
 
-This is a test email sent via SMTP using swaks. 
+This is a test email sent via SMTP using swaks.
 This test email is intended to test the following situation.
 
 * Client connects via submissions port (TLS, port 465)

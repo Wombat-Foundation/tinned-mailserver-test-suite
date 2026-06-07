@@ -1,12 +1,12 @@
 Hi,
 
-This is a test email sent via SMTP using swaks. 
+This is a test email sent via SMTP using swaks.
 This test email is intended to test the following situation.
 
 * Client connects via submissions port (TLS, port 465)
 * Client authenticates via PLAIN authentication (user + password)
 * Client sends email to external recipient address with main address
-* Sender adress has an address extension
+* Sender address has an address extension
 
 This message should be accepted by the mailserver.
 

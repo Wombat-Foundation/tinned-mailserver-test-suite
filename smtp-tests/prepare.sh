@@ -1,15 +1,25 @@
 #!/bin/bash
 
 # Load the configuration variables
+# Use set -a to automatically export all variables so envsubst can see them
+set -a
+# shellcheck source=/dev/null
 source vars.conf
+set +a
 
-
-# Use `envsubst` to replace variables in the conf templates with the actual values
-# envsubst <input.conf >output.conf
-if [[ ! -d ${CONFIG_PATH} ]]; then
-	mkdir ${CONFIG_PATH}
+if [[ ! -d "${TEMPLATE_PATH}" ]]; then
+	echo "Error: Template directory ${TEMPLATE_PATH} not found."
+	exit 1
 fi
-for T in $(ls -1 templates/*.conf | xargs -n 1 basename); do
+
+if [[ ! -d "${CONFIG_PATH}" ]]; then
+	mkdir -p "${CONFIG_PATH}"
+fi
+
+# shellcheck disable=SC2011,SC2012
+for T_PATH in "${TEMPLATE_PATH}"/*.conf; do
+	[[ -e "$T_PATH" ]] || continue
+	T=$(basename "$T_PATH")
 	echo "Process ... ${T}"
-	envsubst <${TEMPLATE_PATH}/${T} >${CONFIG_PATH}/${T}
+	envsubst <"$T_PATH" >"${CONFIG_PATH}/${T}"
 done
