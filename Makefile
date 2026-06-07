@@ -3,7 +3,7 @@ PYTHON = python3
 .DEFAULT_GOAL := _help
 
 .PHONY: all
-all: format lint clean build paper docs bundle ##H Full pipeline: format, lint, clean, build, paper, docs, bundle
+all: format lint clean build paper docs bundle ##H Full pipeline
 
 # --- Print Helpers ---
 define print_info
@@ -27,20 +27,14 @@ format: ##H Format source files
 .PHONY: lint
 lint: shellcheck flake8 ##H Lint sources
 
-.PHONY: test
-test: ##H Run SMTP tests via pytest
-	@$(call print_info,Running SMTP tests via pytest...)
-	pytest
-	@$(call print_success,SMTP tests complete.)
-
 .PHONY: shellcheck
-shellcheck: ##H Lint shell scripts
+shellcheck:
 	@$(call print_info,Linting shell scripts with shellcheck...)
 	-shellcheck $$(git ls-files '*.sh')
 	@$(call print_success,Shellcheck complete.)
 
 .PHONY: flake8
-flake8: ##H Lint python files
+flake8:
 	@$(call print_info,Linting python files with flake8...)
 	@if git ls-files '*.py' | grep -q .; then \
 		flake8 $$(git ls-files '*.py'); \
@@ -50,13 +44,21 @@ flake8: ##H Lint python files
 	@$(call print_success,Flake8 complete.)
 
 
+.PHONY: test
+test: ##H Run SMTP tests via pytest
+	@$(call print_info,Running SMTP tests via pytest...)
+	pytest
+	@$(call print_success,SMTP tests complete.)
+
+
 # .PHONY: clean
 # clean: ##H Remove build artifacts
 # 	rm -f *.o bundle.zip synthesizer dendro firefighter leontovich_fast landscape_txz
 # 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
+
 .PHONY: _help
-_help: ##H Show this help
+_help:
 	@printf "\nUsage: make <command>\n\n"
-	@grep -E '^[a-zA-Z_/.-]+:.*?##H' $(MAKEFILE_LIST) | sort | sed 's/:.*##H /\t/' | expand -t 20 | sed 's/^/  /'
+	@grep -E '^[a-zA-Z_/.-]+:.*?##H' $(MAKEFILE_LIST) | sed 's/:.*##H /\t/' | expand -t 20 | sed 's/^/  /'
 	@printf "\n"
