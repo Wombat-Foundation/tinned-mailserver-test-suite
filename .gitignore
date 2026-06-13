@@ -1,6 +1,7 @@
 # Local credentials / environment files
 .env
 vars.conf
+.tmp/
 
 # Legacy folders
 smtp-tests/vars.conf

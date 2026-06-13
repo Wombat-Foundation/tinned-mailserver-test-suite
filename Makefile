@@ -55,10 +55,12 @@ test: ##H Run SMTP tests via pytest
 	@$(call print_success,SMTP tests complete.)
 
 
-# .PHONY: clean
-# clean: ##H Remove build artifacts
-# 	rm -f *.o bundle.zip synthesizer dendro firefighter leontovich_fast landscape_txz
-# 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+.PHONY: clean
+clean: ##H Remove python bytecode, pytest, and mypy caches
+	@$(call print_info,Cleaning up caches and temporary build files...)
+	rm -rf .pytest_cache .mypy_cache
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	@$(call print_success,Clean complete.)
 
 
 .PHONY: _help
