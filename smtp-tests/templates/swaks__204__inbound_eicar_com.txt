@@ -1,0 +1,7 @@
+Hi,
+
+This is a test email containing the EICAR test signature as a raw .COM file.
+It is expected to be rejected by the mail server's Anti-Virus or File-Type filter.
+
+Best regards,
+Test Suite
