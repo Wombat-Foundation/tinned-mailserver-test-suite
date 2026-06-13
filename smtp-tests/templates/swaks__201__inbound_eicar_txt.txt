@@ -1,7 +1,0 @@
-Hi,
-
-This is a test email containing the EICAR test signature in an attachment.
-It is expected to be rejected by the mail server's Anti-Virus filter.
-
-Best regards,
-Test Suite
