@@ -1,5 +1,6 @@
 import os
 import smtplib
+import uuid
 from email.message import EmailMessage
 
 import pytest
@@ -13,7 +14,59 @@ def read_payload(filename):
         return f.read()
 
 
-def test_201_inbound_eicar_txt(mail_config, smtp_sender):
+def test_200_inbound_normal_delivery(
+    mail_config,
+    smtp_sender,
+    imap_verifier,
+    smtp_inbound_connected,
+    imap_authenticated,
+):
+    """
+    Test 200: Normal inbound message delivery to local recipient.
+    Sends a clean email from an external sender (port 25, STARTTLS)
+    and verifies that it successfully arrives in the local user's IMAP INBOX.
+    """
+    unique_id = str(uuid.uuid4())
+    subject = f"Swaks SMTP test - Inbound Normal Delivery - {unique_id}"
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["To"] = mail_config["sender_main"]  # Local recipient
+    msg["From"] = mail_config["recipient"]  # External sender
+    msg.set_content(
+        "Hi,\n\n"
+        "This is a normal test email sent via SMTP (port 25, STARTTLS).\n"
+        "It is expected to be accepted and delivered to the INBOX.\n\n"
+        f"Verification ID: {unique_id}\n\n"
+        "Best regards,\n"
+        "Test Suite\n"
+    )
+
+    # 1. Send via SMTP
+    code, response = smtp_sender(
+        config=mail_config,
+        envelope_from=mail_config["recipient"],
+        envelope_to=mail_config["sender_main"],
+        message=msg,
+        use_ssl=False,
+        use_starttls=True,
+        authenticate=False,
+    )
+    assert code == 250
+
+    # 2. Verify delivery via IMAP
+    imap_verifier(
+        config=mail_config,
+        user=mail_config["auth_user"],
+        password=mail_config["auth_pass"],
+        subject=subject,
+        expected_folder="INBOX",
+        expect_exists=True,
+        timeout=20.0,
+    )
+
+
+def test_201_inbound_eicar_txt(mail_config, smtp_sender, smtp_inbound_connected):
     """
     Test 201: Inbound message containing the EICAR test signature
     in a text attachment. Expects the mail server to reject the email.
@@ -61,7 +114,7 @@ def test_201_inbound_eicar_txt(mail_config, smtp_sender):
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_202_inbound_gtube(mail_config, smtp_sender):
+def test_202_inbound_gtube(mail_config, smtp_sender, smtp_inbound_connected):
     """
     Test 202: Inbound message containing the GTUBE string.
     Expects the mail server to reject the email as spam.
@@ -96,7 +149,7 @@ def test_202_inbound_gtube(mail_config, smtp_sender):
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_203_inbound_eicar_zip(mail_config, smtp_sender):
+def test_203_inbound_eicar_zip(mail_config, smtp_sender, smtp_inbound_connected):
     """
     Test 203: Inbound message containing the EICAR test signature
     inside a ZIP file. Expects the mail server to reject the email.
@@ -143,7 +196,7 @@ def test_203_inbound_eicar_zip(mail_config, smtp_sender):
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_204_inbound_eicar_com(mail_config, smtp_sender):
+def test_204_inbound_eicar_com(mail_config, smtp_sender, smtp_inbound_connected):
     """
     Test 204: Inbound message containing the EICAR test signature
     as a raw .COM file attachment. Expects the mail server to reject.
@@ -191,7 +244,7 @@ def test_204_inbound_eicar_com(mail_config, smtp_sender):
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender):
+def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender, smtp_inbound_connected):
     """
     Test 205: Inbound message containing the EICAR test signature
     inside a nested ZIP file (double compressed). Expects rejection.

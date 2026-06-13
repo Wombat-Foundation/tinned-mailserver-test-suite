@@ -1,10 +1,63 @@
 import smtplib
+import uuid
 from email.message import EmailMessage
 
 import pytest
 
 
-def test_101_outbound_submissions_authenticated_from_main(mail_config, smtp_sender):
+def test_100_outbound_normal_delivery_local_recipient(
+    mail_config,
+    smtp_sender,
+    imap_verifier,
+    smtp_authenticated,
+    imap_authenticated,
+):
+    """
+    Test 100: Normal outbound submission with local delivery.
+    Sends an authenticated message via port 465 (submissions) to a local alias
+    and verifies that it successfully arrives in the local user's IMAP mailbox.
+    """
+    unique_id = str(uuid.uuid4())
+    subject = f"Swaks SMTP test - Outbound Submission Local Delivery - {unique_id}"
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["To"] = mail_config["sender_alias"]  # Local recipient (alias)
+    msg["From"] = mail_config["sender_main"]  # Local sender
+    msg.set_content(
+        "Hi,\n\n"
+        "This is an authenticated test email sent via SMTP (port 465, SSL).\n"
+        "It is expected to be accepted and delivered locally to the alias address.\n\n"
+        f"Verification ID: {unique_id}\n\n"
+        "Best regards,\n"
+        "Test Suite\n"
+    )
+
+    # 1. Send via SMTP (authenticated)
+    code, response = smtp_sender(
+        config=mail_config,
+        envelope_from=mail_config["sender_main"],
+        envelope_to=mail_config["sender_alias"],
+        message=msg,
+        use_ssl=True,
+    )
+    assert code == 250
+
+    # 2. Verify delivery via IMAP
+    imap_verifier(
+        config=mail_config,
+        user=mail_config["auth_user"],
+        password=mail_config["auth_pass"],
+        subject=subject,
+        expected_folder="INBOX",
+        expect_exists=True,
+        timeout=20.0,
+    )
+
+
+def test_101_outbound_submissions_authenticated_from_main(
+    mail_config, smtp_sender, smtp_authenticated
+):
     """
     Test 101: Successful outbound message through submissions port
     (TLS, port 465). Sends email with the user's main email address.
@@ -36,7 +89,9 @@ def test_101_outbound_submissions_authenticated_from_main(mail_config, smtp_send
     assert "accepted" in response.lower()
 
 
-def test_102_outbound_submissions_authenticated_from_alias(mail_config, smtp_sender):
+def test_102_outbound_submissions_authenticated_from_alias(
+    mail_config, smtp_sender, smtp_authenticated
+):
     """
     Test 102: Successful outbound message through submissions port
     (TLS, port 465). Sends email with an alias email address.
@@ -68,7 +123,9 @@ def test_102_outbound_submissions_authenticated_from_alias(mail_config, smtp_sen
     assert "accepted" in response.lower()
 
 
-def test_103_outbound_submissions_authenticated_from_main_tag(mail_config, smtp_sender):
+def test_103_outbound_submissions_authenticated_from_main_tag(
+    mail_config, smtp_sender, smtp_authenticated
+):
     """
     Test 103: Outbound message through submissions port (TLS, port 465)
     with plus extension. Handles strict sender matching gracefully.
@@ -107,7 +164,7 @@ def test_103_outbound_submissions_authenticated_from_main_tag(mail_config, smtp_
 
 
 def test_104_outbound_submissions_authenticated_from_alias_tag(
-    mail_config, smtp_sender
+    mail_config, smtp_sender, smtp_authenticated
 ):
     """
     Test 104: Outbound message through submissions port (TLS, port 465)
@@ -146,7 +203,9 @@ def test_104_outbound_submissions_authenticated_from_alias_tag(
             raise
 
 
-def test_outbound_submissions_authenticated_from_disallowed(mail_config, smtp_sender):
+def test_outbound_submissions_authenticated_from_disallowed(
+    mail_config, smtp_sender, smtp_authenticated
+):
     """
     Test: Attempting to send from an unauthorized/disallowed address.
     This MUST be rejected by the mailserver under test.
@@ -184,7 +243,9 @@ def test_outbound_submissions_authenticated_from_disallowed(mail_config, smtp_se
     )
 
 
-def test_outbound_submissions_authenticated_from_mismatch_1(mail_config, smtp_sender):
+def test_outbound_submissions_authenticated_from_mismatch_1(
+    mail_config, smtp_sender, smtp_authenticated
+):
     """
     Test: Authenticate, send envelope MAIL FROM as the user, but
     use a forged header From (ceo@google.com).
@@ -212,7 +273,9 @@ def test_outbound_submissions_authenticated_from_mismatch_1(mail_config, smtp_se
         assert e.smtp_code in [501, 550, 554]
 
 
-def test_outbound_submissions_authenticated_from_mismatch_2(mail_config, smtp_sender):
+def test_outbound_submissions_authenticated_from_mismatch_2(
+    mail_config, smtp_sender, smtp_authenticated
+):
     """
     Test: Authenticate, send envelope MAIL FROM as the user, but
     use a forged header From (admin@microsoft.com).

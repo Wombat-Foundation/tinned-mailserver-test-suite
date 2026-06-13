@@ -30,7 +30,11 @@ lint: shellcheck flake8 ##H Lint sources
 .PHONY: shellcheck
 shellcheck:
 	@$(call print_info,Linting shell scripts with shellcheck...)
-	-shellcheck $$(git ls-files '*.sh')
+	@if git ls-files '*.sh' | grep -q .; then \
+		shellcheck $$(git ls-files '*.sh'); \
+	else \
+		echo "No shell scripts found."; \
+	fi
 	@$(call print_success,Shellcheck complete.)
 
 .PHONY: flake8

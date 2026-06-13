@@ -7,7 +7,7 @@ from email.message import EmailMessage
 from dotenv import load_dotenv
 
 # Load variables
-VARS_CONF_PATH = "smtp-tests/vars.conf"
+VARS_CONF_PATH = "vars.conf"
 if os.path.exists(VARS_CONF_PATH):
     with open(VARS_CONF_PATH, "r") as f:
         for line in f:
