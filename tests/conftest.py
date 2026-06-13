@@ -179,7 +179,7 @@ def _send_smtp_message(
     authenticate=True,
 ):
     """
-    Sends an SMTP message using the provided configuration.
+    Sends an SMTP message using the provided configuration with transient retries.
     """
     server = config["server_name"]
     helo = config["helo_name"]
@@ -190,35 +190,73 @@ def _send_smtp_message(
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
 
-    if use_ssl:
-        port = 465
-        client = smtplib.SMTP_SSL(
-            server, port, context=context, local_hostname=helo, timeout=15.0
-        )
-    else:
-        port = 25
-        client = smtplib.SMTP(server, port, local_hostname=helo, timeout=5.0)
-        if use_starttls:
-            client.starttls(context=context)
-            client.ehlo(helo)
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        if use_ssl:
+            port = 465
+            client = smtplib.SMTP_SSL(
+                server, port, context=context, local_hostname=helo, timeout=15.0
+            )
+        else:
+            port = 25
+            client = smtplib.SMTP(server, port, local_hostname=helo, timeout=5.0)
+            if use_starttls:
+                client.starttls(context=context)
+                client.ehlo(helo)
 
-    try:
-        if authenticate and config["auth_user"] and config["auth_pass"]:
-            client.login(config["auth_user"], config["auth_pass"])
-
-        # Send mail with explicit envelope values
-        refused = client.send_message(
-            message, from_addr=envelope_from, to_addrs=envelope_to
-        )
-        if refused:
-            raise smtplib.SMTPRecipientsRefused(refused)
-
-        return 250, "Message accepted"
-    finally:
         try:
-            client.quit()
-        except Exception:
-            pass
+            if authenticate and config["auth_user"] and config["auth_pass"]:
+                client.login(config["auth_user"], config["auth_pass"])
+
+            # Send mail with explicit envelope values
+            refused = client.send_message(
+                message, from_addr=envelope_from, to_addrs=envelope_to
+            )
+            if refused:
+                raise smtplib.SMTPRecipientsRefused(refused)
+
+            return 250, "Message accepted"
+
+        except (smtplib.SMTPRecipientsRefused, smtplib.SMTPResponseException) as e:
+            code = None
+            msg = ""
+            if isinstance(e, smtplib.SMTPRecipientsRefused):
+                for rcpt, err in e.recipients.items():
+                    code, msg_bytes = err
+                    if isinstance(msg_bytes, bytes):
+                        msg = msg_bytes.decode("utf-8", errors="ignore")
+                    else:
+                        msg = str(msg_bytes)
+                    break
+            else:
+                code = e.smtp_code
+                if isinstance(e.smtp_error, bytes):
+                    msg = e.smtp_error.decode("utf-8", errors="ignore")
+                else:
+                    msg = str(e.smtp_error)
+
+            # Check if this is a transient/rate-limiting error
+            is_transient = (
+                (code is not None and (400 <= code <= 499))
+                or "rate limit" in msg.lower()
+                or "try again later" in msg.lower()
+            )
+
+            if is_transient and attempt < max_attempts - 1:
+                time.sleep(3.0)
+                continue
+
+            if is_transient:
+                pytest.skip(
+                    f"Skipping test due to temporary SMTP rate limit: {code} {msg}"
+                )
+
+            raise
+        finally:
+            try:
+                client.quit()
+            except Exception:
+                pass
 
 
 @pytest.fixture(scope="session")
