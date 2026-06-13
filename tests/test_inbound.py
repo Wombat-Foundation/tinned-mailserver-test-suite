@@ -290,3 +290,105 @@ def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender, smtp_inbound_conne
         451,
         452,
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
+
+
+def test_206_inbound_naitube_medium(mail_config, smtp_sender, smtp_inbound_connected):
+    """
+    Test 206: Inbound message containing the NAItube Medium spam pattern.
+    Expects the mail server to reject the email as spam.
+    """
+    msg = EmailMessage()
+    msg["Subject"] = "Swaks SMTP test - Inbound NAItube Medium"
+    msg["To"] = mail_config["sender_main"]
+    msg["From"] = mail_config["recipient"]
+    msg.set_content(
+        "XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-MXL09*C.34X"
+    )
+
+    with pytest.raises(smtplib.SMTPResponseException) as exc_info:
+        smtp_sender(
+            config=mail_config,
+            envelope_from=mail_config["recipient"],
+            envelope_to=mail_config["sender_main"],
+            message=msg,
+            use_ssl=False,
+            use_starttls=True,
+            authenticate=False,
+        )
+
+    err = exc_info.value
+    assert err.smtp_code in [
+        550,
+        554,
+        501,
+        451,
+        452,
+    ], f"Unexpected rejection SMTP code: {err.smtp_code}"
+
+
+def test_207_inbound_naitube_high(mail_config, smtp_sender, smtp_inbound_connected):
+    """
+    Test 207: Inbound message containing the NAItube High spam pattern.
+    Expects the mail server to reject the email as spam.
+    """
+    msg = EmailMessage()
+    msg["Subject"] = "Swaks SMTP test - Inbound NAItube High"
+    msg["To"] = mail_config["sender_main"]
+    msg["From"] = mail_config["recipient"]
+    msg.set_content(
+        "XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-MXL10*C.34X"
+    )
+
+    with pytest.raises(smtplib.SMTPResponseException) as exc_info:
+        smtp_sender(
+            config=mail_config,
+            envelope_from=mail_config["recipient"],
+            envelope_to=mail_config["sender_main"],
+            message=msg,
+            use_ssl=False,
+            use_starttls=True,
+            authenticate=False,
+        )
+
+    err = exc_info.value
+    assert err.smtp_code in [
+        550,
+        554,
+        501,
+        451,
+        452,
+    ], f"Unexpected rejection SMTP code: {err.smtp_code}"
+
+
+def test_208_inbound_naitube_critical(mail_config, smtp_sender, smtp_inbound_connected):
+    """
+    Test 208: Inbound message containing the NAItube Critical spam pattern.
+    Expects the mail server to reject the email as spam.
+    """
+    msg = EmailMessage()
+    msg["Subject"] = "Swaks SMTP test - Inbound NAItube Critical"
+    msg["To"] = mail_config["sender_main"]
+    msg["From"] = mail_config["recipient"]
+    msg.set_content(
+        "XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-MXL11*C.34X"
+    )
+
+    with pytest.raises(smtplib.SMTPResponseException) as exc_info:
+        smtp_sender(
+            config=mail_config,
+            envelope_from=mail_config["recipient"],
+            envelope_to=mail_config["sender_main"],
+            message=msg,
+            use_ssl=False,
+            use_starttls=True,
+            authenticate=False,
+        )
+
+    err = exc_info.value
+    assert err.smtp_code in [
+        550,
+        554,
+        501,
+        451,
+        452,
+    ], f"Unexpected rejection SMTP code: {err.smtp_code}"
