@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# VERSION="0.0.5"
+#
 
 # Load the configuration variables
 # Use set -a to automatically export all variables so envsubst can see them
@@ -16,7 +19,6 @@ if [[ ! -d "${CONFIG_PATH}" ]]; then
 	mkdir -p "${CONFIG_PATH}"
 fi
 
-# shellcheck disable=SC2011,SC2012
 for T_PATH in "${TEMPLATE_PATH}"/*.conf; do
 	[[ -e "$T_PATH" ]] || continue
 	T=$(basename "$T_PATH")
