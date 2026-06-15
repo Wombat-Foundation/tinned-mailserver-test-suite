@@ -108,13 +108,13 @@ for TC in "${TESTCASES[@]}"; do
 	fi
 
 	# Alignment logic: align filenames at column 75
-	PREFIX="Testcase ...... ${RESULT_STR} "
+	PREFIX="Testcase ... ${RESULT_STR} "
 	PREFIX_LEN=${#PREFIX}
-	DOT_COUNT=$((75 - PREFIX_LEN))
+	DOT_COUNT=$((30 - PREFIX_LEN))
 	[[ $DOT_COUNT -lt 1 ]] && DOT_COUNT=1
 	DOTS=$(printf "%${DOT_COUNT}s" | tr ' ' '.')
 
-	echo -e "Testcase ...... ${COLOR}${RESULT_STR}${RST} ${DOTS} ${TC_NAME}"
+	echo -e "Testcase ... ${COLOR}${RESULT_STR}${RST} ${DOTS} ${TC_NAME}"
 
 	# If test failed, show the full swaks log for debugging
 	if [[ "${TC_RC}" -ne "${TC_RC_EXP}" ]] && [[ "${VERBOSE}" -eq "1" ]]; then
