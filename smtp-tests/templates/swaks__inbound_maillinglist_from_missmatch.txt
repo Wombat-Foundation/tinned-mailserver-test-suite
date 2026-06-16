@@ -1,0 +1,15 @@
+Hi,
+
+This is a test email sent via SMTP using swaks.
+This test email is intended to test the following situation.
+
+* Client connects via smtp port (TLS, port 25)
+* Emulates receiving a mailling list email by
+* Client sends different email address in DATA and Envelope From field
+* Envelop MAIL FROM is the mailling list email address
+* DATA From field contains the original sender email address
+
+This message should be received by the mailserver even with the mismatching sender address. (mailling list behaviour)
+
+Best regards,
+SMTP script by swaks
