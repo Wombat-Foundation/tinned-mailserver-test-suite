@@ -1,0 +1,13 @@
+Hi,
+
+This is a test email sent via SMTP using swaks.
+This test email is intended to test the following situation.
+
+* Client connects via submissions port (STARTTLS, port 587)
+* Client authenticates via LOGIN authentication (user + password)
+* Client sends email to external recipient address with an alias address
+
+This message should be accepted by the mailserver.
+
+Best regards,
+SMTP script by swaks
