@@ -29,25 +29,13 @@ lint: lint/shellcheck lint/python ##H Lint sources
 
 .PHONY: lint/shellcheck
 lint/shellcheck:
-	@$(call print_info,Linting shell scripts with shellcheck...)
-	@if git ls-files '*.sh' | grep -q .; then \
-		shellcheck $$(git ls-files '*.sh'); \
-	else \
-		echo "No shell scripts found."; \
-	fi
-	@$(call print_success,Shellcheck complete.)
+	shellcheck $$(git ls-files '*.sh')
 
 .PHONY: lint/python
 lint/python:
-	@$(call print_info,Linting python files with flake8...)
-	@if git ls-files '*.py' | grep -q .; then \
-		flake8 $$(git ls-files '*.py'); \
-		pylint $$(git ls-files '*.py'); \
-		mypy $$(git ls-files '*.py'); \
-	else \
-		echo "No python files found."; \
-	fi
-	@$(call print_success,Flake8 complete.)
+	flake8 $(shell git ls-files '*.py')
+	pylint $(shell git ls-files '*.py')
+	mypy $(shell git ls-files '*.py')
 
 
 .PHONY: test

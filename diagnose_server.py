@@ -57,7 +57,7 @@ print("\n[PROBE 1] Outbound Submissions Port (Port 465 - Implicit TLS)")
 print("-" * 50)
 try:
     print(f"Connecting to {SERVER}:465 with 15s timeout...")
-    client = smtplib.SMTP_SSL(
+    client: smtplib.SMTP = smtplib.SMTP_SSL(
         SERVER, 465, context=context, local_hostname=HELO, timeout=15.0
     )
     print("✓ Successfully connected to Port 465.")

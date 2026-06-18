@@ -38,7 +38,7 @@ def load_config():
 # Load configurations at module import time
 load_config()
 
-_connectivity_cache = {}
+_connectivity_cache: dict[tuple[str, int], bool] = {}
 _smtp_auth_working = None
 _imap_auth_working = None
 
@@ -107,6 +107,8 @@ def smtp_authenticated(mail_config, smtp_outbound_connected):
         with smtplib.SMTP_SSL(
             server, 465, context=context, local_hostname=helo, timeout=3.0
         ) as client:
+            client.set_debuglevel(int(os.environ.get("SMTP_DEBUG", "2")))
+            client._print_debug = lambda *args: custom_print_debug(client, *args)
             client.login(user, password)
             _smtp_auth_working = True
     except Exception as e:
@@ -179,6 +181,7 @@ def smtp_submission_authenticated(mail_config, smtp_submission_connected):
 
     try:
         with smtplib.SMTP(server, 587, local_hostname=helo, timeout=3.0) as client:
+            client.set_debuglevel(int(os.environ.get("SMTP_DEBUG", "2")))
             client.starttls(context=context)
             client.ehlo(helo)
             client.login(user, password)
@@ -217,6 +220,69 @@ def mail_config():
         ),
         "recipient": os.environ.get("RECIPIENT_ADDRESS", "test@example.com"),
     }
+
+
+def custom_print_debug(client, *args):
+    """Formats and colorizes SMTP debug logs beautifully."""
+    import datetime
+    import sys
+    import re
+
+    CYAN = "\033[1;36m"
+    GREEN = "\033[1;32m"
+    RED = "\033[1;31m"
+    YELLOW = "\033[1;33m"
+    GRAY = "\033[90m"
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+
+    timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
+
+    if len(args) >= 2:
+        prefix = str(args[0]).strip()
+        payload = " ".join(str(x) for x in args[1:])
+
+        # Clean up the payload representation
+        cleaned_payload = payload
+        if payload.startswith("b'") or payload.startswith('b"'):
+            try:
+                inner = payload[2:-1]
+                cleaned_payload = inner.encode("utf-8").decode("unicode_escape")
+            except Exception:
+                cleaned_payload = payload
+        elif payload.startswith("'") or payload.startswith('"'):
+            try:
+                inner = payload[1:-1]
+                cleaned_payload = inner.encode("utf-8").decode("unicode_escape")
+            except Exception:
+                cleaned_payload = payload
+
+        # Strip trailing newlines/carriage returns
+        cleaned_payload = cleaned_payload.rstrip("\r\n").rstrip("\n")
+
+        if prefix == "send:":
+            # Client outgoing message
+            formatted = f"{CYAN}➜ CLIENT:{RESET} {BOLD}{cleaned_payload}{RESET}"
+        elif prefix == "reply:":
+            # Server incoming message (check response code)
+            code_match = re.match(r"^(\d{3})", cleaned_payload)
+            if code_match:
+                code = int(code_match.group(1))
+                color = GREEN if code < 400 else RED
+            elif "retcode" in cleaned_payload:
+                color = GRAY
+            else:
+                color = GREEN
+            formatted = f"{color}⬅ SERVER:{RESET} {cleaned_payload}"
+        elif prefix == "data:":
+            formatted = f"{YELLOW}✉ DATA:{RESET} {cleaned_payload}"
+        else:
+            formatted = f"{prefix} {cleaned_payload}"
+
+        print(f"{GRAY}[{timestamp}]{RESET} {formatted}", file=sys.stderr)
+    else:
+        payload = " ".join(str(x) for x in args)
+        print(f"{GRAY}[{timestamp}]{RESET} {payload}", file=sys.stderr)
 
 
 def _send_smtp_message(
@@ -260,6 +326,9 @@ def _send_smtp_message(
             if use_starttls:
                 client.starttls(context=context)
                 client.ehlo(helo)
+
+        # Set SMTP debugging level to show exact protocol transaction on stderr
+        client.set_debuglevel(int(os.environ.get("SMTP_DEBUG", "2")))
 
         try:
             if authenticate and config["auth_user"] and config["auth_pass"]:
@@ -417,3 +486,17 @@ def _verify_imap_delivery(
 def imap_verifier():
     """Fixture returning the IMAP delivery verification helper function."""
     return _verify_imap_delivery
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--smtp-debug",
+        action="store",
+        default="2",
+        help="SMTP debug level (0=none, 1=standard, 2=with timestamps)",
+    )
+
+
+def pytest_configure(config):
+    # Set the environment variable so all helper functions can access it
+    os.environ["SMTP_DEBUG"] = str(config.getoption("--smtp-debug"))
