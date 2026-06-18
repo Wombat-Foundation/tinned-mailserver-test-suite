@@ -160,9 +160,8 @@ def imap_authenticated(mail_config, imap_connected):
         pytest.skip(f"IMAP login failed with credentials in .env: {e}")
 
 
-@pytest.mark.usefixtures("smtp_submission_connected")
 @pytest.fixture(scope="session")
-def smtp_submission_authenticated(mail_config):
+def smtp_submission_authenticated(mail_config, smtp_submission_connected):
     """Skips tests if SMTP Submission authentication fails."""
     if _AUTH_STATUS["smtp_submission"] is False:
         pytest.skip("SMTP Submission authentication is not working/unconfigured.")

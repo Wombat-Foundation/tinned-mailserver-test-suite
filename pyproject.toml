@@ -14,8 +14,12 @@ authors = [
 ]
 dependencies = [
     "pytest>=8.0.0",
-    "python-dotenv>=1.0.0"
+    "python-dotenv>=1.0.0",
+    "argcomplete>=3.0.0"
 ]
+
+[project.scripts]
+diagnose-server = "diagnose_server:main"
 
 [tool.black]
 line-length = 88

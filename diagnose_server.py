@@ -6,12 +6,14 @@ SSL/TLS negotiation, authentication, sub-addressing (plus-addressing)
 support, and inbound security filtering capability.
 """
 
+import argparse
 import os
 import smtplib
 import socket
 import ssl
 from email.message import EmailMessage
 
+import argcomplete
 from dotenv import load_dotenv
 
 # Load variables
@@ -80,10 +82,16 @@ def probe_port_465(
                     # Issue MAIL FROM
                     code, resp = ssl_client.mail(ext_addr)
                     print(f"  -> Server response: {code} {safe_str(resp)}")
-                    print(
-                        "✓ Outbound plus-addressing (sub-addressing) "
-                        "is ALLOWED by the mail server."
-                    )
+                    if code == 250:
+                        print(
+                            "✓ Outbound plus-addressing (sub-addressing) "
+                            "is ALLOWED by the mail server."
+                        )
+                    else:
+                        print(
+                            "✗ Outbound plus-addressing is REJECTED "
+                            f"by the mail server (Response code: {code})."
+                        )
                 except smtplib.SMTPResponseException as e:
                     print(
                         "  ✗ Outbound plus-addressing is REJECTED "
@@ -211,36 +219,102 @@ def probe_port_25(
         )
     except (socket.error, smtplib.SMTPException, ssl.SSLError) as e:
         print(f"✗ Connection to Port 25 failed: {e}")
+        print("\n  ℹ [EXPERT DIAGNOSTIC EXPLANATION]")
+        if isinstance(e, socket.error) and e.errno == 101:
+            print(
+                "    -> Network is Unreachable (Errno 101) indicates that "
+                "your CURRENT local network\n"
+                "       or hosting provider is actively blocking outbound "
+                "TCP connections on Port 25.\n"
+                "       To prevent outbound spam, nearly all residential ISPs, "
+                "corporate firewalls, and\n"
+                "       cloud VPS providers (e.g., DigitalOcean, AWS, Google "
+                "Cloud, Linode) block outbound Port 25.\n"
+                "       Your mail server itself is likely working fine, "
+                "but your client cannot reach it."
+            )
+        else:
+            print(
+                "    -> This failure could be due to your server not "
+                "listening on Port 25, or\n"
+                "       outbound Port 25 connections being filtered by "
+                "your local router/firewall."
+            )
+        print(
+            "    -> Recommendation: Run this diagnostic script directly "
+            "on the mail server itself,\n"
+            "       or from a VPS where outbound port 25 has been "
+            "unblocked by request to your host."
+        )
 
 
 def main() -> None:
     """Main execution entrypoint for mail server diagnostics."""
-    # Server configurations
-    server = os.environ.get("MAILSERVER_NAME", "mail.example.com")
-    helo = os.environ.get("HELO_NAME", "localhost")
-    user = os.environ.get("SENDER_AUTH_USER", "test1@example.com")
-    password = os.environ.get("SENDER_AUTH_PASSWORD", "TestPassword")
-    main_addr = os.environ.get("SENDER_ADDRESS_MAIN", "test1@example.com")
-    ext_addr = os.environ.get("SENDER_ADDRESS_MAIN_TAG", "test1+extension@example.com")
-    ext_recipient = os.environ.get("RECIPIENT_ADDRESS", "test@example.com")
+    parser = argparse.ArgumentParser(
+        description="SMTP Mail Server Diagnostics Tool",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "-s",
+        "--server",
+        default=os.environ.get("MAILSERVER_NAME", "mail.example.com"),
+        help="Target mail server domain/IP",
+    )
+    parser.add_argument(
+        "--helo",
+        default=os.environ.get("HELO_NAME", "localhost"),
+        help="HELO name to announce during handshake",
+    )
+    parser.add_argument(
+        "-u",
+        "--user",
+        default=os.environ.get("SENDER_AUTH_USER", "test1@example.com"),
+        help="SENDER_AUTH_USER for authentication checks",
+    )
+    parser.add_argument(
+        "-p",
+        "--password",
+        default=os.environ.get("SENDER_AUTH_PASSWORD", "TestPassword"),
+        help="SENDER_AUTH_PASSWORD for authentication checks",
+    )
+    parser.add_argument(
+        "--main-addr",
+        default=os.environ.get("SENDER_ADDRESS_MAIN", "test1@example.com"),
+        help="SENDER_ADDRESS_MAIN (main recipient/sender email)",
+    )
+    parser.add_argument(
+        "--ext-addr",
+        default=os.environ.get(
+            "SENDER_ADDRESS_MAIN_TAG", "test1+extension@example.com"
+        ),
+        help="SENDER_ADDRESS_MAIN_TAG for plus-addressing test",
+    )
+    parser.add_argument(
+        "--recipient",
+        default=os.environ.get("RECIPIENT_ADDRESS", "test@example.com"),
+        help="External RECIPIENT_ADDRESS used for STARTTLS probes",
+    )
+
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args()
 
     print("=" * 70)
-    print(f"DIAGNOSTIC REPORT FOR MAIL SERVER: {server}")
+    print(f"DIAGNOSTIC REPORT FOR MAIL SERVER: {args.server}")
     print("=" * 70)
 
     probe_port_465(
-        server=server,
-        helo=helo,
-        user=user,
-        password=password,
-        ext_addr=ext_addr,
+        server=args.server,
+        helo=args.helo,
+        user=args.user,
+        password=args.password,
+        ext_addr=args.ext_addr,
     )
 
     probe_port_25(
-        server=server,
-        helo=helo,
-        main_addr=main_addr,
-        ext_recipient=ext_recipient,
+        server=args.server,
+        helo=args.helo,
+        main_addr=args.main_addr,
+        ext_recipient=args.recipient,
     )
 
     print("\n" + "=" * 70)
