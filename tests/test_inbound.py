@@ -1,4 +1,10 @@
-# pylint: disable=missing-module-docstring,missing-function-docstring,unused-argument,unused-variable,implicit-str-concat,duplicate-code
+"""
+Inbound SMTP Mail Server Test Cases.
+
+This module validates inbound email delivery features, spam/AV blocking
+(EICAR signatures, GTUBE patterns), and envelope-mismatch policies.
+"""
+
 import os
 import smtplib
 import uuid
@@ -8,19 +14,21 @@ import pytest
 
 PAYLOAD_DIR = os.path.join(os.path.dirname(__file__), "payload_files")
 
+pytestmark = pytest.mark.usefixtures("smtp_inbound_connected")
 
-def read_payload(filename):
+
+def read_payload(filename: str) -> bytes:
+    """Reads a binary virus or spam payload from the payload_files directory."""
     path = os.path.join(PAYLOAD_DIR, filename)
     with open(path, "rb") as f:
         return f.read()
 
 
+@pytest.mark.usefixtures("imap_authenticated")
 def test_200_inbound_normal_delivery(
     mail_config,
     smtp_sender,
     imap_verifier,
-    smtp_inbound_connected,
-    imap_authenticated,
 ):
     """
     Test 200: Normal inbound message delivery to local recipient.
@@ -44,7 +52,7 @@ def test_200_inbound_normal_delivery(
     )
 
     # 1. Send via SMTP
-    code, response = smtp_sender(
+    code, _ = smtp_sender(
         config=mail_config,
         envelope_from=mail_config["recipient"],
         envelope_to=mail_config["sender_main"],
@@ -67,7 +75,7 @@ def test_200_inbound_normal_delivery(
     )
 
 
-def test_201_inbound_eicar_txt(mail_config, smtp_sender, smtp_inbound_connected):
+def test_201_inbound_eicar_txt(mail_config, smtp_sender):
     """
     Test 201: Inbound message containing the EICAR test signature
     in a text attachment. Expects the mail server to reject the email.
@@ -115,7 +123,7 @@ def test_201_inbound_eicar_txt(mail_config, smtp_sender, smtp_inbound_connected)
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_202_inbound_gtube(mail_config, smtp_sender, smtp_inbound_connected):
+def test_202_inbound_gtube(mail_config, smtp_sender):
     """
     Test 202: Inbound message containing the GTUBE string.
     Expects the mail server to reject the email as spam.
@@ -150,7 +158,7 @@ def test_202_inbound_gtube(mail_config, smtp_sender, smtp_inbound_connected):
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_203_inbound_eicar_zip(mail_config, smtp_sender, smtp_inbound_connected):
+def test_203_inbound_eicar_zip(mail_config, smtp_sender):
     """
     Test 203: Inbound message containing the EICAR test signature
     inside a ZIP file. Expects the mail server to reject the email.
@@ -197,7 +205,7 @@ def test_203_inbound_eicar_zip(mail_config, smtp_sender, smtp_inbound_connected)
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_204_inbound_eicar_com(mail_config, smtp_sender, smtp_inbound_connected):
+def test_204_inbound_eicar_com(mail_config, smtp_sender):
     """
     Test 204: Inbound message containing the EICAR test signature
     as a raw .COM file attachment. Expects the mail server to reject.
@@ -245,7 +253,7 @@ def test_204_inbound_eicar_com(mail_config, smtp_sender, smtp_inbound_connected)
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender, smtp_inbound_connected):
+def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender):
     """
     Test 205: Inbound message containing the EICAR test signature
     inside a nested ZIP file (double compressed). Expects rejection.
@@ -293,7 +301,7 @@ def test_205_inbound_eicar_com2_zip(mail_config, smtp_sender, smtp_inbound_conne
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_206_inbound_naitube_medium(mail_config, smtp_sender, smtp_inbound_connected):
+def test_206_inbound_naitube_medium(mail_config, smtp_sender):
     """
     Test 206: Inbound message containing the NAItube Medium spam pattern.
     Expects the mail server to reject the email as spam.
@@ -327,7 +335,7 @@ def test_206_inbound_naitube_medium(mail_config, smtp_sender, smtp_inbound_conne
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_207_inbound_naitube_high(mail_config, smtp_sender, smtp_inbound_connected):
+def test_207_inbound_naitube_high(mail_config, smtp_sender):
     """
     Test 207: Inbound message containing the NAItube High spam pattern.
     Expects the mail server to reject the email as spam.
@@ -361,7 +369,7 @@ def test_207_inbound_naitube_high(mail_config, smtp_sender, smtp_inbound_connect
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
 
 
-def test_208_inbound_naitube_critical(mail_config, smtp_sender, smtp_inbound_connected):
+def test_208_inbound_naitube_critical(mail_config, smtp_sender):
     """
     Test 208: Inbound message containing the NAItube Critical spam pattern.
     Expects the mail server to reject the email as spam.
@@ -398,7 +406,6 @@ def test_208_inbound_naitube_critical(mail_config, smtp_sender, smtp_inbound_con
 def test_254_inbound_mailinglist_from_mismatch_1(
     mail_config,
     smtp_sender,
-    smtp_inbound_connected,
 ):
     """
     Test 254: Inbound mailing list sender mismatch test.
@@ -416,7 +423,7 @@ def test_254_inbound_mailinglist_from_mismatch_1(
         "This test email is intended to test mailing list sender mismatch scenario.\n"
     )
 
-    code, response = smtp_sender(
+    code, _ = smtp_sender(
         config=mail_config,
         envelope_from=mail_config["sender_mailinglist"],
         envelope_to=mail_config["sender_main"],

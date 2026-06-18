@@ -1,4 +1,11 @@
-# pylint: disable=missing-module-docstring,missing-function-docstring,unused-argument,unused-variable,duplicate-code
+"""
+Outbound SMTP Mail Server Test Cases.
+
+This module validates outbound email delivery, Submissions port (587, STARTTLS)
+with PLAIN and LOGIN authentication, SMTPS (465, implicit TLS), and sender address
+mismatch restrictions.
+"""
+
 import smtplib
 import uuid
 from email.message import EmailMessage
@@ -6,12 +13,11 @@ from email.message import EmailMessage
 import pytest
 
 
+@pytest.mark.usefixtures("smtp_authenticated", "imap_authenticated")
 def test_100_outbound_normal_delivery_local_recipient(
     mail_config,
     smtp_sender,
     imap_verifier,
-    smtp_authenticated,
-    imap_authenticated,
 ):
     """
     Test 100: Normal outbound submission with local delivery.
@@ -35,7 +41,7 @@ def test_100_outbound_normal_delivery_local_recipient(
     )
 
     # 1. Send via SMTP (authenticated)
-    code, response = smtp_sender(
+    code, _ = smtp_sender(
         config=mail_config,
         envelope_from=mail_config["sender_main"],
         envelope_to=mail_config["sender_alias"],
@@ -61,8 +67,9 @@ def test_100_outbound_normal_delivery_local_recipient(
 # ==========================================
 
 
+@pytest.mark.usefixtures("smtp_submission_authenticated")
 def test_101_outbound_submissions_plain_authenticated_from_main(
-    mail_config, smtp_sender, smtp_submission_authenticated
+    mail_config, smtp_sender
 ):
     """
     Test 101: Successful outbound message through submissions port
@@ -98,8 +105,9 @@ def test_101_outbound_submissions_plain_authenticated_from_main(
     assert "accepted" in response.lower()
 
 
+@pytest.mark.usefixtures("smtp_submission_authenticated")
 def test_102_outbound_submissions_plain_authenticated_from_alias(
-    mail_config, smtp_sender, smtp_submission_authenticated
+    mail_config, smtp_sender
 ):
     """
     Test 102: Successful outbound message through submissions port
@@ -135,8 +143,9 @@ def test_102_outbound_submissions_plain_authenticated_from_alias(
     assert "accepted" in response.lower()
 
 
+@pytest.mark.usefixtures("smtp_submission_authenticated")
 def test_103_outbound_submissions_plain_authenticated_from_main_tag(
-    mail_config, smtp_sender, smtp_submission_authenticated
+    mail_config, smtp_sender
 ):
     """
     Test 103: Outbound message through submissions port (STARTTLS, port 587)
@@ -179,8 +188,9 @@ def test_103_outbound_submissions_plain_authenticated_from_main_tag(
             raise
 
 
+@pytest.mark.usefixtures("smtp_submission_authenticated")
 def test_104_outbound_submissions_plain_authenticated_from_alias_tag(
-    mail_config, smtp_sender, smtp_submission_authenticated
+    mail_config, smtp_sender
 ):
     """
     Test 104: Outbound message through submissions port (STARTTLS, port 587)
@@ -598,7 +608,7 @@ def test_252_outbound_submissions_authenticated_from_mismatch_1(
     )
 
     try:
-        code, response = smtp_sender(
+        code, _ = smtp_sender(
             config=mail_config,
             envelope_from=mail_config["sender_main"],
             envelope_to=mail_config["recipient"],
@@ -632,7 +642,7 @@ def test_253_outbound_submissions_authenticated_from_mismatch_2(
     )
 
     try:
-        code, response = smtp_sender(
+        code, _ = smtp_sender(
             config=mail_config,
             envelope_from=mail_config["sender_main"],
             envelope_to=mail_config["recipient"],
