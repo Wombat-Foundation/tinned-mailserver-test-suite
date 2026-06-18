@@ -1,3 +1,4 @@
+# pylint: disable=missing-module-docstring,missing-function-docstring,unused-argument,unused-variable,duplicate-code
 import smtplib
 import uuid
 from email.message import EmailMessage

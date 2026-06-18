@@ -1,3 +1,4 @@
+# pylint: disable=missing-module-docstring,missing-function-docstring,unused-argument,unused-variable,implicit-str-concat,duplicate-code
 import os
 import smtplib
 import uuid

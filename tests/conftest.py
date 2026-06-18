@@ -1,8 +1,12 @@
+# pylint: disable=too-many-locals,too-many-arguments,too-many-branches,too-many-statements,invalid-name,redefined-outer-name,missing-module-docstring,missing-function-docstring,broad-exception-caught,unused-argument,unused-variable,unspecified-encoding,raise-missing-from,duplicate-code  # noqa: E501
+import datetime
 import imaplib
 import os
+import re
 import smtplib
 import socket
 import ssl
+import sys
 import time
 
 import pytest
@@ -108,6 +112,7 @@ def smtp_authenticated(mail_config, smtp_outbound_connected):
             server, 465, context=context, local_hostname=helo, timeout=3.0
         ) as client:
             client.set_debuglevel(int(os.environ.get("SMTP_DEBUG", "2")))
+            # pylint: disable=protected-access
             client._print_debug = lambda *args: custom_print_debug(client, *args)
             client.login(user, password)
             _smtp_auth_working = True
@@ -182,6 +187,8 @@ def smtp_submission_authenticated(mail_config, smtp_submission_connected):
     try:
         with smtplib.SMTP(server, 587, local_hostname=helo, timeout=3.0) as client:
             client.set_debuglevel(int(os.environ.get("SMTP_DEBUG", "2")))
+            # pylint: disable=protected-access
+            client._print_debug = lambda *args: custom_print_debug(client, *args)
             client.starttls(context=context)
             client.ehlo(helo)
             client.login(user, password)
@@ -222,12 +229,8 @@ def mail_config():
     }
 
 
-def custom_print_debug(client, *args):
+def custom_print_debug(_client, *args):
     """Formats and colorizes SMTP debug logs beautifully."""
-    import datetime
-    import sys
-    import re
-
     CYAN = "\033[1;36m"
     GREEN = "\033[1;32m"
     RED = "\033[1;31m"
@@ -329,6 +332,8 @@ def _send_smtp_message(
 
         # Set SMTP debugging level to show exact protocol transaction on stderr
         client.set_debuglevel(int(os.environ.get("SMTP_DEBUG", "2")))
+        # pylint: disable=protected-access,cell-var-from-loop
+        client._print_debug = lambda *args: custom_print_debug(client, *args)
 
         try:
             if authenticate and config["auth_user"] and config["auth_pass"]:
