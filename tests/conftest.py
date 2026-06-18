@@ -43,8 +43,11 @@ def load_config() -> None:
 load_config()
 
 _connectivity_cache: dict[tuple[str, int], bool] = {}
-_smtp_auth_working = None
-_imap_auth_working = None
+_AUTH_STATUS: dict[str, bool | None] = {
+    "smtp": None,
+    "imap": None,
+    "smtp_submission": None,
+}
 
 
 def check_port_open(host, port, timeout=1.0):
@@ -88,10 +91,9 @@ def imap_connected(mail_config):
 @pytest.fixture(scope="session")
 def smtp_authenticated(mail_config, smtp_outbound_connected):
     """Skips tests if SMTP authentication fails."""
-    global _smtp_auth_working
-    if _smtp_auth_working is False:
+    if _AUTH_STATUS["smtp"] is False:
         pytest.skip("SMTP authentication is not working/unconfigured.")
-    if _smtp_auth_working is True:
+    if _AUTH_STATUS["smtp"] is True:
         return
 
     server = mail_config["server_name"]
@@ -100,7 +102,7 @@ def smtp_authenticated(mail_config, smtp_outbound_connected):
     password = mail_config["auth_pass"]
 
     if not user or not password:
-        _smtp_auth_working = False
+        _AUTH_STATUS["smtp"] = False
         pytest.skip("SMTP credentials not configured.")
 
     context = ssl.create_default_context()
@@ -115,19 +117,18 @@ def smtp_authenticated(mail_config, smtp_outbound_connected):
             # pylint: disable=protected-access
             client._print_debug = lambda *args: custom_print_debug(client, *args)
             client.login(user, password)
-            _smtp_auth_working = True
+            _AUTH_STATUS["smtp"] = True
     except Exception as e:
-        _smtp_auth_working = False
+        _AUTH_STATUS["smtp"] = False
         pytest.skip(f"SMTP login failed with credentials in .env: {e}")
 
 
 @pytest.fixture(scope="session")
 def imap_authenticated(mail_config, imap_connected):
     """Skips tests if IMAP authentication fails."""
-    global _imap_auth_working
-    if _imap_auth_working is False:
+    if _AUTH_STATUS["imap"] is False:
         pytest.skip("IMAP authentication is not working/unconfigured.")
-    if _imap_auth_working is True:
+    if _AUTH_STATUS["imap"] is True:
         return
 
     server = mail_config["server_name"]
@@ -135,7 +136,7 @@ def imap_authenticated(mail_config, imap_connected):
     password = mail_config["auth_pass"]
 
     if not user or not password:
-        _imap_auth_working = False
+        _AUTH_STATUS["imap"] = False
         pytest.skip("IMAP credentials not configured.")
 
     context = ssl.create_default_context()
@@ -145,30 +146,19 @@ def imap_authenticated(mail_config, imap_connected):
     try:
         with imaplib.IMAP4_SSL(server, 993, ssl_context=context) as client:
             client.login(user, password)
-            _imap_auth_working = True
+            _AUTH_STATUS["imap"] = True
     except Exception as e:
-        _imap_auth_working = False
+        _AUTH_STATUS["imap"] = False
         pytest.skip(f"IMAP login failed with credentials in .env: {e}")
 
 
-_smtp_submission_auth_working = None
-
-
+@pytest.mark.usefixtures("smtp_submission_connected")
 @pytest.fixture(scope="session")
-def smtp_submission_connected(mail_config):
-    """Skips tests if SMTP Submission (port 587) is unreachable."""
-    server = mail_config["server_name"]
-    if not check_port_open(server, 587, timeout=1.5):
-        pytest.skip(f"SMTP Submission port 587 on {server} is unreachable.")
-
-
-@pytest.fixture(scope="session")
-def smtp_submission_authenticated(mail_config, smtp_submission_connected):
+def smtp_submission_authenticated(mail_config):
     """Skips tests if SMTP Submission authentication fails."""
-    global _smtp_submission_auth_working
-    if _smtp_submission_auth_working is False:
+    if _AUTH_STATUS["smtp_submission"] is False:
         pytest.skip("SMTP Submission authentication is not working/unconfigured.")
-    if _smtp_submission_auth_working is True:
+    if _AUTH_STATUS["smtp_submission"] is True:
         return
 
     server = mail_config["server_name"]
@@ -177,7 +167,7 @@ def smtp_submission_authenticated(mail_config, smtp_submission_connected):
     password = mail_config["auth_pass"]
 
     if not user or not password:
-        _smtp_submission_auth_working = False
+        _AUTH_STATUS["smtp_submission"] = False
         pytest.skip("SMTP credentials not configured.")
 
     context = ssl.create_default_context()
@@ -192,9 +182,9 @@ def smtp_submission_authenticated(mail_config, smtp_submission_connected):
             client.starttls(context=context)
             client.ehlo(helo)
             client.login(user, password)
-            _smtp_submission_auth_working = True
+            _AUTH_STATUS["smtp_submission"] = True
     except Exception as e:
-        _smtp_submission_auth_working = False
+        _AUTH_STATUS["smtp_submission"] = False
         pytest.skip(f"SMTP Submission login failed with credentials in .env: {e}")
 
 

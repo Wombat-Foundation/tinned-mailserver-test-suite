@@ -134,7 +134,7 @@ def test_202_inbound_gtube(mail_config, smtp_sender):
     msg["From"] = mail_config["recipient"]  # External sender
 
     # GTUBE string must be on a line by itself
-    gtube = "XJS*C4JDBQADN1.NSBN3*2IDNEN*" "GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X"
+    gtube = "XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X"
     msg.set_content(gtube)
 
     with pytest.raises(smtplib.SMTPResponseException) as exc_info:
