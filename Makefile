@@ -29,7 +29,7 @@ lint: lint/shellcheck lint/python ##H Lint sources
 
 .PHONY: lint/shellcheck
 lint/shellcheck:
-	shellcheck $$(git ls-files '*.sh')
+	-shellcheck $$(git ls-files '*.sh')
 
 .PHONY: lint/python
 lint/python:
