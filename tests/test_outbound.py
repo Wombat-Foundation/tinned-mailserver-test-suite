@@ -53,8 +53,6 @@ def test_100_outbound_normal_delivery_local_recipient(
     # 2. Verify delivery via IMAP
     imap_verifier(
         config=mail_config,
-        user=mail_config["auth_user"],
-        password=mail_config["auth_pass"],
         subject=subject,
         expected_folder="INBOX",
         expect_exists=True,

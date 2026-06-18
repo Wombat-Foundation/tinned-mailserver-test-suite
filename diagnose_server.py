@@ -41,31 +41,20 @@ def safe_str(val_obj: object) -> str:
     return str(val_obj)
 
 
-def main() -> None:
-    """Main execution entrypoint for mail server diagnostics."""
-    # Server configurations
-    server = os.environ.get("MAILSERVER_NAME", "mail.example.com")
-    helo = os.environ.get("HELO_NAME", "localhost")
-    user = os.environ.get("SENDER_AUTH_USER", "test1@example.com")
-    password = os.environ.get("SENDER_AUTH_PASSWORD", "TestPassword")
-    main_addr = os.environ.get("SENDER_ADDRESS_MAIN", "test1@example.com")
-    ext_addr = os.environ.get("SENDER_ADDRESS_MAIN_TAG", "test1+extension@example.com")
-    ext_recipient = os.environ.get("RECIPIENT_ADDRESS", "test@example.com")
-
-    print("=" * 70)
-    print(f"DIAGNOSTIC REPORT FOR MAIL SERVER: {server}")
-    print("=" * 70)
-
-    # Create relaxed SSL Context
+def probe_port_465(
+    server: str,
+    helo: str,
+    user: str,
+    password: str,
+    ext_addr: str,
+) -> None:
+    """Probes SMTP implicit SSL port 465."""
+    print("\n[PROBE 1] Outbound Submissions Port (Port 465 - Implicit TLS)")
+    print("-" * 50)
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
 
-    # -------------------------------------------------------------------------
-    # PROBE 1: Port 465 (Outbound Submissions with implicit SSL)
-    # -------------------------------------------------------------------------
-    print("\n[PROBE 1] Outbound Submissions Port (Port 465 - Implicit TLS)")
-    print("-" * 50)
     try:
         print(f"Connecting to {server}:465 with 15s timeout...")
         ssl_client = smtplib.SMTP_SSL(
@@ -125,11 +114,58 @@ def main() -> None:
     except (socket.error, smtplib.SMTPException, ssl.SSLError) as e:
         print(f"✗ Connection to Port 465 failed: {e}")
 
-    # -------------------------------------------------------------------------
-    # PROBE 2: Port 25 (Inbound SMTP / MX Delivery)
-    # -------------------------------------------------------------------------
+
+def check_inbound_av(
+    smtp_client: smtplib.SMTP, main_addr: str, ext_recipient: str
+) -> None:
+    """Probes if inbound Anti-Virus/Anti-Spam actively rejects signature payloads."""
+    print(
+        "Probing if inbound Anti-Virus/Anti-Spam "
+        "actively rejects signature payloads..."
+    )
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = "Diagnostics probe - GTUBE"
+        msg["To"] = main_addr
+        msg["From"] = ext_recipient
+        msg.set_content(
+            "XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X"
+        )
+
+        # Reset transaction
+        smtp_client.rset()
+        smtp_client.mail(ext_recipient)
+        smtp_client.rcpt(main_addr)
+        # Try sending DATA
+        code, resp = smtp_client.data(msg.as_bytes())
+        print(f"  -> GTUBE sent. Server response: {code} {safe_str(resp)}")
+        if code == 250:
+            print(
+                "  ℹ Inbound GTUBE (Spam) was ACCEPTED (No active session "
+                "rejection, or filters are inactive/deliver-to-junk)."
+            )
+        else:
+            print("  ✓ Inbound GTUBE (Spam) was REJECTED during transaction.")
+    except smtplib.SMTPResponseException as e:
+        print(
+            "  ✓ Inbound GTUBE (Spam) was REJECTED during transaction: "
+            f"{e.smtp_code} {safe_str(e.smtp_error)}"
+        )
+
+
+def probe_port_25(
+    server: str,
+    helo: str,
+    main_addr: str,
+    ext_recipient: str,
+) -> None:
+    """Probes SMTP port 25 with STARTTLS."""
     print("\n[PROBE 2] Inbound SMTP Port (Port 25 - STARTTLS)")
     print("-" * 50)
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+
     try:
         print(f"Connecting to {server}:25 with 5s timeout...")
         smtp_client = smtplib.SMTP(server, 25, local_hostname=helo, timeout=5.0)
@@ -163,40 +199,7 @@ def main() -> None:
             )
 
         # AV / Anti-Spam Rejection Probe
-        print(
-            "Probing if inbound Anti-Virus/Anti-Spam "
-            "actively rejects signature payloads..."
-        )
-        # Attempt to send GTUBE
-        try:
-            msg = EmailMessage()
-            msg["Subject"] = "Diagnostics probe - GTUBE"
-            msg["To"] = main_addr
-            msg["From"] = ext_recipient
-            msg.set_content(
-                "XJS*C4JDBQADN1.NSBN3*2IDNEN*"
-                "GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X"
-            )
-
-            # Reset transaction
-            smtp_client.rset()
-            smtp_client.mail(ext_recipient)
-            smtp_client.rcpt(main_addr)
-            # Try sending DATA
-            code, resp = smtp_client.data(msg.as_bytes())
-            print(f"  -> GTUBE sent. Server response: {code} {safe_str(resp)}")
-            if code == 250:
-                print(
-                    "  ℹ Inbound GTUBE (Spam) was ACCEPTED (No active session "
-                    "rejection, or filters are inactive/deliver-to-junk)."
-                )
-            else:
-                print("  ✓ Inbound GTUBE (Spam) was REJECTED during transaction.")
-        except smtplib.SMTPResponseException as e:
-            print(
-                "  ✓ Inbound GTUBE (Spam) was REJECTED during transaction: "
-                f"{e.smtp_code} {safe_str(e.smtp_error)}"
-            )
+        check_inbound_av(smtp_client, main_addr, ext_recipient)
 
         smtp_client.quit()
     except socket.timeout:
@@ -211,6 +214,37 @@ def main() -> None:
         )
     except (socket.error, smtplib.SMTPException, ssl.SSLError) as e:
         print(f"✗ Connection to Port 25 failed: {e}")
+
+
+def main() -> None:
+    """Main execution entrypoint for mail server diagnostics."""
+    # Server configurations
+    server = os.environ.get("MAILSERVER_NAME", "mail.example.com")
+    helo = os.environ.get("HELO_NAME", "localhost")
+    user = os.environ.get("SENDER_AUTH_USER", "test1@example.com")
+    password = os.environ.get("SENDER_AUTH_PASSWORD", "TestPassword")
+    main_addr = os.environ.get("SENDER_ADDRESS_MAIN", "test1@example.com")
+    ext_addr = os.environ.get("SENDER_ADDRESS_MAIN_TAG", "test1+extension@example.com")
+    ext_recipient = os.environ.get("RECIPIENT_ADDRESS", "test@example.com")
+
+    print("=" * 70)
+    print(f"DIAGNOSTIC REPORT FOR MAIL SERVER: {server}")
+    print("=" * 70)
+
+    probe_port_465(
+        server=server,
+        helo=helo,
+        user=user,
+        password=password,
+        ext_addr=ext_addr,
+    )
+
+    probe_port_25(
+        server=server,
+        helo=helo,
+        main_addr=main_addr,
+        ext_recipient=ext_recipient,
+    )
 
     print("\n" + "=" * 70)
     print("DIAGNOSTICS COMPLETE.")

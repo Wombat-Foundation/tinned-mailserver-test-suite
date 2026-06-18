@@ -1,4 +1,7 @@
-# pylint: disable=too-many-locals,too-many-arguments,too-many-branches,too-many-statements,invalid-name,redefined-outer-name,missing-module-docstring,missing-function-docstring,broad-exception-caught,unused-argument,unused-variable,unspecified-encoding,raise-missing-from,duplicate-code  # noqa: E501
+"""
+Pytest fixtures and core shared helpers for SMTP/IMAP integration tests.
+"""
+
 import datetime
 import imaplib
 import os
@@ -283,6 +286,7 @@ def _send_smtp_message(
     envelope_from,
     envelope_to,
     message,
+    *,
     use_ssl=True,
     use_starttls=False,
     authenticate=True,
@@ -397,9 +401,8 @@ def smtp_sender():
 
 def _verify_imap_delivery(
     config,
-    user,
-    password,
     subject,
+    *,
     expected_folder="INBOX",
     expect_exists=True,
     timeout=15.0,
@@ -408,6 +411,8 @@ def _verify_imap_delivery(
     Connects to the IMAP server and polls to verify delivery of an email.
     """
     server = config["server_name"]
+    user = config["auth_user"]
+    password = config["auth_pass"]
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
@@ -464,15 +469,13 @@ def _verify_imap_delivery(
         except Exception as e:
             if isinstance(e, AssertionError):
                 raise
-            pass
 
         if time.time() - start_time > timeout:
             if expect_exists:
                 raise AssertionError(
                     f"Email '{subject}' not found in IMAP within {timeout}s."
                 )
-            else:
-                return True
+            return True
 
         time.sleep(3.0)
 
