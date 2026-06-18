@@ -11,6 +11,9 @@ import socket
 import ssl
 import sys
 import time
+import typing
+import uuid
+from email.message import EmailMessage
 
 import pytest
 from dotenv import load_dotenv
@@ -20,12 +23,13 @@ VARS_CONF_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "vars.
 
 
 def load_config() -> None:
+    """Loads configuration from environment variables and vars.conf."""
     # Try loading from .env if present
     load_dotenv()
 
     # Try loading from smtp-tests/vars.conf manually (handles 'export KEY=val')
     if os.path.exists(VARS_CONF_PATH):
-        with open(VARS_CONF_PATH, "r") as f:
+        with open(VARS_CONF_PATH, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith("#"):
@@ -54,6 +58,7 @@ _AUTH_STATUS: dict[str, bool | None] = {
 
 
 def check_port_open(host, port, timeout=1.0):
+    """Checks if a specific TCP port is open on the target server."""
     cache_key = (host, port)
     if cache_key in _connectivity_cache:
         return _connectivity_cache[cache_key]
@@ -223,14 +228,17 @@ def mail_config():
 
 
 def custom_print_debug(_client, *args):
+    # pylint: disable=too-many-branches
     """Formats and colorizes SMTP debug logs beautifully."""
-    CYAN = "\033[1;36m"
-    GREEN = "\033[1;32m"
-    RED = "\033[1;31m"
-    YELLOW = "\033[1;33m"
-    GRAY = "\033[90m"
-    RESET = "\033[0m"
-    BOLD = "\033[1m"
+    colors = {
+        "cyan": "\033[1;36m",
+        "green": "\033[1;32m",
+        "red": "\033[1;31m",
+        "yellow": "\033[1;33m",
+        "gray": "\033[90m",
+        "reset": "\033[0m",
+        "bold": "\033[1m",
+    }
 
     timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
 
@@ -258,27 +266,36 @@ def custom_print_debug(_client, *args):
 
         if prefix == "send:":
             # Client outgoing message
-            formatted = f"{CYAN}➜ CLIENT:{RESET} {BOLD}{cleaned_payload}{RESET}"
+            formatted = (
+                f"{colors['cyan']}➜ CLIENT:{colors['reset']} "
+                f"{colors['bold']}{cleaned_payload}{colors['reset']}"
+            )
         elif prefix == "reply:":
             # Server incoming message (check response code)
             code_match = re.match(r"^(\d{3})", cleaned_payload)
             if code_match:
                 code = int(code_match.group(1))
-                color = GREEN if code < 400 else RED
+                color = colors["green"] if code < 400 else colors["red"]
             elif "retcode" in cleaned_payload:
-                color = GRAY
+                color = colors["gray"]
             else:
-                color = GREEN
-            formatted = f"{color}⬅ SERVER:{RESET} {cleaned_payload}"
+                color = colors["green"]
+            formatted = f"{color}⬅ SERVER:{colors['reset']} {cleaned_payload}"
         elif prefix == "data:":
-            formatted = f"{YELLOW}✉ DATA:{RESET} {cleaned_payload}"
+            formatted = f"{colors['yellow']}✉ DATA:{colors['reset']} {cleaned_payload}"
         else:
             formatted = f"{prefix} {cleaned_payload}"
 
-        print(f"{GRAY}[{timestamp}]{RESET} {formatted}", file=sys.stderr)
+        print(
+            f"{colors['gray']}[{timestamp}]{colors['reset']} {formatted}",
+            file=sys.stderr,
+        )
     else:
         payload = " ".join(str(x) for x in args)
-        print(f"{GRAY}[{timestamp}]{RESET} {payload}", file=sys.stderr)
+        print(
+            f"{colors['gray']}[{timestamp}]{colors['reset']} {payload}",
+            file=sys.stderr,
+        )
 
 
 def _send_smtp_message(
@@ -293,6 +310,8 @@ def _send_smtp_message(
     port=None,
     auth_method=None,
 ):
+    # pylint: disable=too-many-arguments,too-many-locals,too-many-branches
+    # pylint: disable=too-many-statements
     """
     Sends an SMTP message using the provided configuration with transient retries.
     """
@@ -355,7 +374,7 @@ def _send_smtp_message(
             code = None
             msg = ""
             if isinstance(e, smtplib.SMTPRecipientsRefused):
-                for rcpt, err in e.recipients.items():
+                for _rcpt, err in e.recipients.items():
                     code, msg_bytes = err
                     if isinstance(msg_bytes, bytes):
                         msg = msg_bytes.decode("utf-8", errors="ignore")
@@ -407,6 +426,7 @@ def _verify_imap_delivery(
     expect_exists=True,
     timeout=15.0,
 ):
+    # pylint: disable=too-many-locals,too-many-branches
     """
     Connects to the IMAP server and polls to verify delivery of an email.
     """
@@ -423,7 +443,9 @@ def _verify_imap_delivery(
             client = imaplib.IMAP4_SSL(server, 993, ssl_context=context)
         except Exception as e:
             if time.time() - start_time > timeout:
-                raise RuntimeError(f"Failed to connect to IMAP server {server}: {e}")
+                raise RuntimeError(
+                    f"Failed to connect to IMAP server {server}: {e}"
+                ) from e
             time.sleep(2.0)
             continue
 
@@ -486,7 +508,60 @@ def imap_verifier():
     return _verify_imap_delivery
 
 
+def execute_delivery_test(
+    mail_config: dict[str, str],
+    smtp_sender: typing.Callable[..., tuple[int, str]],
+    imap_verifier: typing.Callable[..., bool],
+    *,
+    subject_prefix: str,
+    body_text: str,
+    envelope_from: str,
+    envelope_to: str,
+    msg_from: str,
+    msg_to: str,
+    use_ssl: bool = True,
+    use_starttls: bool = False,
+    authenticate: bool = True,
+) -> None:
+    # pylint: disable=too-many-arguments,too-many-locals
+    """Helper function to execute standard SMTP delivery and IMAP verification."""
+    unique_id = str(uuid.uuid4())
+    subject = f"{subject_prefix} - {unique_id}"
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["To"] = msg_to
+    msg["From"] = msg_from
+    msg.set_content(
+        f"Hi,\n\n"
+        f"{body_text}\n\n"
+        f"Verification ID: {unique_id}\n\n"
+        f"Best regards,\n"
+        f"Test Suite\n"
+    )
+
+    code, _ = smtp_sender(
+        config=mail_config,
+        envelope_from=envelope_from,
+        envelope_to=envelope_to,
+        message=msg,
+        use_ssl=use_ssl,
+        use_starttls=use_starttls,
+        authenticate=authenticate,
+    )
+    assert code == 250
+
+    imap_verifier(
+        config=mail_config,
+        subject=subject,
+        expected_folder="INBOX",
+        expect_exists=True,
+        timeout=20.0,
+    )
+
+
 def pytest_addoption(parser):
+    """Adds custom command-line options to pytest."""
     parser.addoption(
         "--smtp-debug",
         action="store",
@@ -496,5 +571,6 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
+    """Configures test settings based on command-line options."""
     # Set the environment variable so all helper functions can access it
     os.environ["SMTP_DEBUG"] = str(config.getoption("--smtp-debug"))

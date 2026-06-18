@@ -7,10 +7,10 @@ mismatch restrictions.
 """
 
 import smtplib
-import uuid
 from email.message import EmailMessage
 
 import pytest
+from conftest import execute_delivery_test
 
 
 @pytest.mark.usefixtures("smtp_authenticated", "imap_authenticated")
@@ -18,45 +18,26 @@ def test_100_outbound_normal_delivery_local_recipient(
     mail_config,
     smtp_sender,
     imap_verifier,
-):
+) -> None:
     """
     Test 100: Normal outbound submission with local delivery.
     Sends an authenticated message via port 465 (submissions) to a local alias
     and verifies that it successfully arrives in the local user's IMAP mailbox.
     """
-    unique_id = str(uuid.uuid4())
-    subject = f"Swaks SMTP test - Outbound Submission Local Delivery - {unique_id}"
-
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["To"] = mail_config["sender_alias"]  # Local recipient (alias)
-    msg["From"] = mail_config["sender_main"]  # Local sender
-    msg.set_content(
-        "Hi,\n\n"
-        "This is an authenticated test email sent via SMTP (port 465, SSL).\n"
-        "It is expected to be accepted and delivered locally to the alias address.\n\n"
-        f"Verification ID: {unique_id}\n\n"
-        "Best regards,\n"
-        "Test Suite\n"
-    )
-
-    # 1. Send via SMTP (authenticated)
-    code, _ = smtp_sender(
-        config=mail_config,
+    execute_delivery_test(
+        mail_config,
+        smtp_sender,
+        imap_verifier,
+        subject_prefix="Swaks SMTP test - Outbound Submission Local Delivery",
+        body_text=(
+            "This is an authenticated test email sent via SMTP (port 465, SSL).\n"
+            "It is expected to be accepted and delivered locally to the alias address."
+        ),
         envelope_from=mail_config["sender_main"],
         envelope_to=mail_config["sender_alias"],
-        message=msg,
+        msg_from=mail_config["sender_main"],
+        msg_to=mail_config["sender_alias"],
         use_ssl=True,
-    )
-    assert code == 250
-
-    # 2. Verify delivery via IMAP
-    imap_verifier(
-        config=mail_config,
-        subject=subject,
-        expected_folder="INBOX",
-        expect_exists=True,
-        timeout=20.0,
     )
 
 

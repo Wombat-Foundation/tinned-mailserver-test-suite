@@ -7,10 +7,10 @@ This module validates inbound email delivery features, spam/AV blocking
 
 import os
 import smtplib
-import uuid
 from email.message import EmailMessage
 
 import pytest
+from conftest import execute_delivery_test
 
 PAYLOAD_DIR = os.path.join(os.path.dirname(__file__), "payload_files")
 
@@ -29,47 +29,28 @@ def test_200_inbound_normal_delivery(
     mail_config,
     smtp_sender,
     imap_verifier,
-):
+) -> None:
     """
     Test 200: Normal inbound message delivery to local recipient.
     Sends a clean email from an external sender (port 25, STARTTLS)
     and verifies that it successfully arrives in the local user's IMAP INBOX.
     """
-    unique_id = str(uuid.uuid4())
-    subject = f"Swaks SMTP test - Inbound Normal Delivery - {unique_id}"
-
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["To"] = mail_config["sender_main"]  # Local recipient
-    msg["From"] = mail_config["recipient"]  # External sender
-    msg.set_content(
-        "Hi,\n\n"
-        "This is a normal test email sent via SMTP (port 25, STARTTLS).\n"
-        "It is expected to be accepted and delivered to the INBOX.\n\n"
-        f"Verification ID: {unique_id}\n\n"
-        "Best regards,\n"
-        "Test Suite\n"
-    )
-
-    # 1. Send via SMTP
-    code, _ = smtp_sender(
-        config=mail_config,
+    execute_delivery_test(
+        mail_config,
+        smtp_sender,
+        imap_verifier,
+        subject_prefix="Swaks SMTP test - Inbound Normal Delivery",
+        body_text=(
+            "This is a normal test email sent via SMTP (port 25, STARTTLS).\n"
+            "It is expected to be accepted and delivered to the INBOX."
+        ),
         envelope_from=mail_config["recipient"],
         envelope_to=mail_config["sender_main"],
-        message=msg,
+        msg_from=mail_config["recipient"],
+        msg_to=mail_config["sender_main"],
         use_ssl=False,
         use_starttls=True,
         authenticate=False,
-    )
-    assert code == 250
-
-    # 2. Verify delivery via IMAP
-    imap_verifier(
-        config=mail_config,
-        subject=subject,
-        expected_folder="INBOX",
-        expect_exists=True,
-        timeout=20.0,
     )
 
 

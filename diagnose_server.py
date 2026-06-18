@@ -17,19 +17,16 @@ from dotenv import load_dotenv
 # Load variables
 VARS_CONF_PATH = "vars.conf"
 if os.path.exists(VARS_CONF_PATH):
-    with open(VARS_CONF_PATH, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if line.startswith("export "):
-                n_exports = len("export ")
-                line = line[n_exports:]
-            if "=" in line:
-                key, val = line.split("=", 1)
-                key = key.strip()
-                val = val.strip().strip('"').strip("'")
-                os.environ[key] = val
+    with open(VARS_CONF_PATH, "r", encoding="utf-8") as vars_file:
+        for raw_line in vars_file:
+            clean_line = raw_line.strip()
+            if clean_line and not clean_line.startswith("#"):
+                if clean_line.startswith("export "):
+                    n_exports = len("export ")
+                    clean_line = clean_line[n_exports:]
+                if "=" in clean_line:
+                    k, v = clean_line.split("=", 1)
+                    os.environ[k.strip()] = v.strip().strip('"').strip("'")
 else:
     load_dotenv()
 

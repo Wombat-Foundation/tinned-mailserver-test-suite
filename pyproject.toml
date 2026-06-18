@@ -30,3 +30,13 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+
+[tool.pylint.messages_control]
+disable = [
+    "redefined-outer-name",
+    "unused-argument",
+    "broad-exception-caught"
+]
+
+[tool.mypy]
+ignore_missing_imports = true
