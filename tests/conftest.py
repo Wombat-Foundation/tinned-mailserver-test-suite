@@ -16,11 +16,11 @@ from dotenv import load_dotenv
 VARS_CONF_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "vars.conf")
 
 
-def load_config():
-    # 1. Try loading from .env if present
+def load_config() -> None:
+    # Try loading from .env if present
     load_dotenv()
 
-    # 2. Try loading from smtp-tests/vars.conf manually (handles 'export KEY=val')
+    # Try loading from smtp-tests/vars.conf manually (handles 'export KEY=val')
     if os.path.exists(VARS_CONF_PATH):
         with open(VARS_CONF_PATH, "r") as f:
             for line in f:

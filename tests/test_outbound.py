@@ -233,8 +233,9 @@ def test_104_outbound_submissions_plain_authenticated_from_alias_tag(
             raise
 
 
+@pytest.mark.usefixtures("smtp_submission_authenticated")
 def test_105_outbound_submissions_login_authenticated_from_main(
-    mail_config, smtp_sender, smtp_submission_authenticated
+    mail_config, smtp_sender
 ):
     """
     Test 105: Successful outbound message through submissions port
@@ -270,8 +271,9 @@ def test_105_outbound_submissions_login_authenticated_from_main(
     assert "accepted" in response.lower()
 
 
+@pytest.mark.usefixtures("smtp_submission_authenticated")
 def test_106_outbound_submissions_login_authenticated_from_alias(
-    mail_config, smtp_sender, smtp_submission_authenticated
+    mail_config, smtp_sender
 ):
     """
     Test 106: Successful outbound message through submissions port
@@ -312,9 +314,8 @@ def test_106_outbound_submissions_login_authenticated_from_alias(
 # ==========================================
 
 
-def test_111_outbound_smtps_plain_authenticated_from_main(
-    mail_config, smtp_sender, smtp_authenticated
-):
+@pytest.mark.usefixtures("smtp_authenticated")
+def test_111_outbound_smtps_plain_authenticated_from_main(mail_config, smtp_sender):
     """
     Test 111: Successful outbound message through SMTPS port
     (SSL, port 465) using PLAIN authentication.
@@ -347,9 +348,8 @@ def test_111_outbound_smtps_plain_authenticated_from_main(
     assert "accepted" in response.lower()
 
 
-def test_112_outbound_smtps_plain_authenticated_from_alias(
-    mail_config, smtp_sender, smtp_authenticated
-):
+@pytest.mark.usefixtures("smtp_authenticated")
+def test_112_outbound_smtps_plain_authenticated_from_alias(mail_config, smtp_sender):
     """
     Test 112: Successful outbound message through SMTPS port
     (SSL, port 465) using PLAIN authentication with an alias address.
@@ -382,9 +382,8 @@ def test_112_outbound_smtps_plain_authenticated_from_alias(
     assert "accepted" in response.lower()
 
 
-def test_113_outbound_smtps_plain_authenticated_from_main_tag(
-    mail_config, smtp_sender, smtp_authenticated
-):
+@pytest.mark.usefixtures("smtp_authenticated")
+def test_113_outbound_smtps_plain_authenticated_from_main_tag(mail_config, smtp_sender):
     """
     Test 113: Outbound message through SMTPS port (SSL, port 465)
     with plus extension using PLAIN authentication.
@@ -424,8 +423,9 @@ def test_113_outbound_smtps_plain_authenticated_from_main_tag(
             raise
 
 
+@pytest.mark.usefixtures("smtp_authenticated")
 def test_114_outbound_smtps_plain_authenticated_from_alias_tag(
-    mail_config, smtp_sender, smtp_authenticated
+    mail_config, smtp_sender
 ):
     """
     Test 114: Outbound message through SMTPS port (SSL, port 465)
@@ -466,9 +466,8 @@ def test_114_outbound_smtps_plain_authenticated_from_alias_tag(
             raise
 
 
-def test_115_outbound_smtps_login_authenticated_from_main(
-    mail_config, smtp_sender, smtp_authenticated
-):
+@pytest.mark.usefixtures("smtp_authenticated")
+def test_115_outbound_smtps_login_authenticated_from_main(mail_config, smtp_sender):
     """
     Test 115: Successful outbound message through SMTPS port
     (SSL, port 465) using LOGIN authentication.
@@ -501,9 +500,8 @@ def test_115_outbound_smtps_login_authenticated_from_main(
     assert "accepted" in response.lower()
 
 
-def test_116_outbound_smtps_login_authenticated_from_alias(
-    mail_config, smtp_sender, smtp_authenticated
-):
+@pytest.mark.usefixtures("smtp_authenticated")
+def test_116_outbound_smtps_login_authenticated_from_alias(mail_config, smtp_sender):
     """
     Test 116: Successful outbound message through SMTPS port
     (SSL, port 465) using LOGIN authentication with an alias address.
@@ -541,8 +539,9 @@ def test_116_outbound_smtps_login_authenticated_from_alias(
 # ==========================================
 
 
+@pytest.mark.usefixtures("smtp_authenticated")
 def test_251_outbound_submissions_authenticated_from_disallowed(
-    mail_config, smtp_sender, smtp_authenticated
+    mail_config, smtp_sender
 ):
     """
     Test 251: Attempting to send from an unauthorized/disallowed address.
@@ -589,8 +588,9 @@ def test_251_outbound_submissions_authenticated_from_disallowed(
     )
 
 
+@pytest.mark.usefixtures("smtp_authenticated")
 def test_252_outbound_submissions_authenticated_from_mismatch_1(
-    mail_config, smtp_sender, smtp_authenticated
+    mail_config, smtp_sender
 ):
     """
     Test 252: Authenticate, send envelope MAIL FROM as the user, but
@@ -623,8 +623,9 @@ def test_252_outbound_submissions_authenticated_from_mismatch_1(
         assert e.smtp_code in [26, 501, 550, 554]
 
 
+@pytest.mark.usefixtures("smtp_authenticated")
 def test_253_outbound_submissions_authenticated_from_mismatch_2(
-    mail_config, smtp_sender, smtp_authenticated
+    mail_config, smtp_sender
 ):
     """
     Test 253: Authenticate, send envelope MAIL FROM as the user, but
