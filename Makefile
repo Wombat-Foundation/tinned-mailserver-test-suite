@@ -25,10 +25,10 @@ format: ##H Format source files
 
 
 .PHONY: lint
-lint: shellcheck flake8 ##H Lint sources
+lint: lint/shellcheck lint/python ##H Lint sources
 
-.PHONY: shellcheck
-shellcheck:
+.PHONY: lint/shellcheck
+lint/shellcheck:
 	@$(call print_info,Linting shell scripts with shellcheck...)
 	@if git ls-files '*.sh' | grep -q .; then \
 		shellcheck $$(git ls-files '*.sh'); \
@@ -37,11 +37,13 @@ shellcheck:
 	fi
 	@$(call print_success,Shellcheck complete.)
 
-.PHONY: flake8
-flake8:
+.PHONY: lint/python
+lint/python:
 	@$(call print_info,Linting python files with flake8...)
 	@if git ls-files '*.py' | grep -q .; then \
 		flake8 $$(git ls-files '*.py'); \
+		pylint $$(git ls-files '*.py'); \
+		mypy $$(git ls-files '*.py'); \
 	else \
 		echo "No python files found."; \
 	fi

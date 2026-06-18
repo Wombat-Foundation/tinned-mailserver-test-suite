@@ -144,6 +144,50 @@ def imap_authenticated(mail_config, imap_connected):
         pytest.skip(f"IMAP login failed with credentials in .env: {e}")
 
 
+_smtp_submission_auth_working = None
+
+
+@pytest.fixture(scope="session")
+def smtp_submission_connected(mail_config):
+    """Skips tests if SMTP Submission (port 587) is unreachable."""
+    server = mail_config["server_name"]
+    if not check_port_open(server, 587, timeout=1.5):
+        pytest.skip(f"SMTP Submission port 587 on {server} is unreachable.")
+
+
+@pytest.fixture(scope="session")
+def smtp_submission_authenticated(mail_config, smtp_submission_connected):
+    """Skips tests if SMTP Submission authentication fails."""
+    global _smtp_submission_auth_working
+    if _smtp_submission_auth_working is False:
+        pytest.skip("SMTP Submission authentication is not working/unconfigured.")
+    if _smtp_submission_auth_working is True:
+        return
+
+    server = mail_config["server_name"]
+    helo = mail_config["helo_name"]
+    user = mail_config["auth_user"]
+    password = mail_config["auth_pass"]
+
+    if not user or not password:
+        _smtp_submission_auth_working = False
+        pytest.skip("SMTP credentials not configured.")
+
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+
+    try:
+        with smtplib.SMTP(server, 587, local_hostname=helo, timeout=3.0) as client:
+            client.starttls(context=context)
+            client.ehlo(helo)
+            client.login(user, password)
+            _smtp_submission_auth_working = True
+    except Exception as e:
+        _smtp_submission_auth_working = False
+        pytest.skip(f"SMTP Submission login failed with credentials in .env: {e}")
+
+
 @pytest.fixture(scope="session")
 def mail_config():
     """Provides configuration parameters for SMTP mail server testing."""
@@ -165,6 +209,12 @@ def mail_config():
         "sender_forged2": os.environ.get(
             "SENDER_ADDRESS_FORGED2", "forged@example.net"
         ),
+        "sender_mailinglist": os.environ.get(
+            "SENDER_MAILLINGLIST", "maillinglist@example.net"
+        ),
+        "sender_mailinglist_origin": os.environ.get(
+            "SENDER_MAILLINGLIST_ORIGIN", "sender@example.org"
+        ),
         "recipient": os.environ.get("RECIPIENT_ADDRESS", "test@example.com"),
     }
 
@@ -177,6 +227,8 @@ def _send_smtp_message(
     use_ssl=True,
     use_starttls=False,
     authenticate=True,
+    port=None,
+    auth_method=None,
 ):
     """
     Sends an SMTP message using the provided configuration with transient retries.
@@ -192,21 +244,35 @@ def _send_smtp_message(
 
     max_attempts = 3
     for attempt in range(max_attempts):
-        if use_ssl:
-            port = 465
+        if port is not None:
+            actual_port = port
+        elif use_ssl:
+            actual_port = 465
+        else:
+            actual_port = 25
+
+        if use_ssl and actual_port == 465:
             client = smtplib.SMTP_SSL(
-                server, port, context=context, local_hostname=helo, timeout=15.0
+                server, actual_port, context=context, local_hostname=helo, timeout=15.0
             )
         else:
-            port = 25
-            client = smtplib.SMTP(server, port, local_hostname=helo, timeout=5.0)
+            client = smtplib.SMTP(server, actual_port, local_hostname=helo, timeout=5.0)
             if use_starttls:
                 client.starttls(context=context)
                 client.ehlo(helo)
 
         try:
             if authenticate and config["auth_user"] and config["auth_pass"]:
-                client.login(config["auth_user"], config["auth_pass"])
+                user = config["auth_user"]
+                password = config["auth_pass"]
+                if auth_method in ("PLAIN", "LOGIN"):
+                    client.user = user
+                    client.password = password
+                    client.auth(
+                        auth_method, getattr(client, "auth_" + auth_method.lower())
+                    )
+                else:
+                    client.login(user, password)
 
             # Send mail with explicit envelope values
             refused = client.send_message(

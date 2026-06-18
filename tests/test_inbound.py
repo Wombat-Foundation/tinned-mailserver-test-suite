@@ -392,3 +392,36 @@ def test_208_inbound_naitube_critical(mail_config, smtp_sender, smtp_inbound_con
         451,
         452,
     ], f"Unexpected rejection SMTP code: {err.smtp_code}"
+
+
+def test_254_inbound_mailinglist_from_mismatch_1(
+    mail_config,
+    smtp_sender,
+    smtp_inbound_connected,
+):
+    """
+    Test 254: Inbound mailing list sender mismatch test.
+    Ensures that mail is accepted when envelope MAIL FROM matches the mailing list
+    but Header From contains the original sender address (typical mailing list
+    behavior).
+    """
+    msg = EmailMessage()
+    msg["Subject"] = "Swaks SMTP test - Sender mismatch / mailinglist inbound"
+    msg["To"] = mail_config["sender_main"]
+    msg["From"] = mail_config["sender_mailinglist_origin"]
+    msg.set_content(
+        "Hi,\n\n"
+        "This is a test email sent via SMTP using Python.\n"
+        "This test email is intended to test mailing list sender mismatch scenario.\n"
+    )
+
+    code, response = smtp_sender(
+        config=mail_config,
+        envelope_from=mail_config["sender_mailinglist"],
+        envelope_to=mail_config["sender_main"],
+        message=msg,
+        use_ssl=False,
+        use_starttls=True,
+        authenticate=False,
+    )
+    assert code == 250
