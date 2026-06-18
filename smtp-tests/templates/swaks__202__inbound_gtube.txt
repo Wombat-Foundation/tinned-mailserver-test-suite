@@ -1,1 +1,13 @@
+Hi,
+
+This is a test email containing the GTUBE (Generic Test for UnsolicitedBulk Email) test pattern.
+It is expected to be rejected by the mail server's Anti-Virus filter.
+
+If your spam filter supports it, the GTUBE provides a test by which you
+can verify that the filter is installed correctly and is detecting incoming
+spam.(in upper case and with no white spaces and line breaks):
+
 XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X
+
+Best regards,
+Test Suite
