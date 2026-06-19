@@ -306,6 +306,17 @@ def main() -> None:
     print(f"DIAGNOSTIC REPORT FOR MAIL SERVER: {args.server}")
     print("=" * 70)
 
+    if args.server == "mail.example.com":
+        print(
+            "\n[WARNING] You are running diagnostics against the default "
+            "placeholder 'mail.example.com'."
+        )
+        print(
+            "Please configure your .env, vars.conf, or pass custom arguments "
+            "(e.g. --server mail.yourdomain.com).\n"
+        )
+        print("=" * 70)
+
     probe_port_465(
         server=args.server,
         helo=args.helo,
