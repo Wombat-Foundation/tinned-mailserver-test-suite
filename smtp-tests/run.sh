@@ -3,7 +3,6 @@
 VERSION="0.0.6"
 #
 
-
 # Color definition
 GREEN='\e[0;32m'
 YELLOW='\e[0;33m'
@@ -15,7 +14,7 @@ RST='\e[0m'
 #
 # Help screen
 #
-function help_screen () {
+function help_screen() {
 	echo
 	echo "Usage: $(basename "$0") [-hv] [--verbose]"
 	echo "  -h  --help                      print this usage and exit"
@@ -26,8 +25,7 @@ function help_screen () {
 	echo
 }
 
-function version_screen
-{
+function version_screen {
 	echo
 	echo "$(basename "$0") Version $VERSION"
 	echo
@@ -36,39 +34,39 @@ function version_screen
 VERBOSE=0
 while [ $# -gt 0 ]; do
 	case $1 in
-		# General parameter
-		-h|--help)
-			help_screen
-			exit 0
-			;;
+	# General parameter
+	-h | --help)
+		help_screen
+		exit 0
+		;;
 
-		-v|--version)
-			version_screen
-			exit 0
-			;;
+	-v | --version)
+		version_screen
+		exit 0
+		;;
 
-		--verbose)
-			VERBOSE=1
-			shift 1
-			;;
-		-l|--cat-list)
-			LIST_CATEGORIES=1
-			shift 1
-			;;
-		-c|--category)
-			if [[ ! -z "$2" ]]; then
-				RUN_CATEGORY=$2
-				shift 2
-			else
-				echo -e "${RED}ERROR${RST}: Option '--category' requires an argument."
-				exit 1
-			fi
-			;;
-		*)
-			echo -e "${RED}ERROR${RST}: Unknown option '$1'."
-			help_screen
+	--verbose)
+		VERBOSE=1
+		shift 1
+		;;
+	-l | --cat-list)
+		LIST_CATEGORIES=1
+		shift 1
+		;;
+	-c | --category)
+		if [[ ! -z "$2" ]]; then
+			RUN_CATEGORY=$2
+			shift 2
+		else
+			echo -e "${RED}ERROR${RST}: Option '--category' requires an argument."
 			exit 1
-			;;
+		fi
+		;;
+	*)
+		echo -e "${RED}ERROR${RST}: Unknown option '$1'."
+		help_screen
+		exit 1
+		;;
 	esac
 done
 

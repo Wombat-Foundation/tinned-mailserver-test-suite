@@ -17,19 +17,23 @@ import argcomplete
 from dotenv import load_dotenv
 
 # Load variables
-VARS_CONF_PATH = "vars.conf"
-if os.path.exists(VARS_CONF_PATH):
-    with open(VARS_CONF_PATH, "r", encoding="utf-8") as vars_file:
-        for raw_line in vars_file:
-            clean_line = raw_line.strip()
-            if clean_line and not clean_line.startswith("#"):
-                if clean_line.startswith("export "):
-                    n_exports = len("export ")
-                    clean_line = clean_line[n_exports:]
-                if "=" in clean_line:
-                    k, v = clean_line.split("=", 1)
-                    os.environ[k.strip()] = v.strip().strip('"').strip("'")
-else:
+vars_paths = ["vars.conf", "smtp-tests/vars.conf"]
+loaded_vars = False
+for path in vars_paths:
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as vars_file:
+            for raw_line in vars_file:
+                clean_line = raw_line.strip()
+                if clean_line and not clean_line.startswith("#"):
+                    if clean_line.startswith("export "):
+                        n_exports = len("export ")
+                        clean_line = clean_line[n_exports:]
+                    if "=" in clean_line:
+                        k, v = clean_line.split("=", 1)
+                        os.environ[k.strip()] = v.strip().strip('"').strip("'")
+        loaded_vars = True
+
+if not loaded_vars:
     load_dotenv()
 
 

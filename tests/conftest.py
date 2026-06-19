@@ -27,23 +27,31 @@ def load_config() -> None:
     # Try loading from .env if present
     load_dotenv()
 
-    # Try loading from smtp-tests/vars.conf manually (handles 'export KEY=val')
-    if os.path.exists(VARS_CONF_PATH):
-        with open(VARS_CONF_PATH, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if line.startswith("export "):
-                    n_exports = len("export ")
-                    line = line[n_exports:]
-                if "=" in line:
-                    key, val = line.split("=", 1)
-                    key = key.strip()
-                    val = val.strip().strip('"').strip("'")
-                    # Set it in environment if not already set (env takes precedence)
-                    if key not in os.environ:
-                        os.environ[key] = val
+    # Try loading from smtp-tests/vars.conf or root vars.conf manually
+    # (handles 'export KEY=val')
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    vars_paths = [
+        os.path.join(root_dir, "vars.conf"),
+        os.path.join(root_dir, "smtp-tests", "vars.conf"),
+    ]
+
+    for path in vars_paths:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if line.startswith("export "):
+                        n_exports = len("export ")
+                        line = line[n_exports:]
+                    if "=" in line:
+                        key, val = line.split("=", 1)
+                        key = key.strip()
+                        val = val.strip().strip('"').strip("'")
+                        # Set in environment if not set (env takes precedence)
+                        if key not in os.environ:
+                            os.environ[key] = val
 
 
 # Load configurations at module import time
@@ -55,6 +63,7 @@ _AUTH_STATUS: dict[str, bool | None] = {
     "imap": None,
     "smtp_submission": None,
 }
+_SMTP_RATE_LIMITED = False
 
 
 def check_port_open(host, port, timeout=1.0):
@@ -72,9 +81,27 @@ def check_port_open(host, port, timeout=1.0):
         return False
 
 
+def is_configured(mail_config) -> bool:
+    """Returns True if the test suite has been configured with real credentials."""
+    server = mail_config.get("server_name")
+    user = mail_config.get("auth_user")
+    password = mail_config.get("auth_pass")
+
+    # If using default/placeholder values or missing, it is not configured.
+    if not server or server == "mail.example.com":
+        return False
+    if not user or user == "test1@example.com":
+        return False
+    if not password or password == "TestPassword":
+        return False
+    return True
+
+
 @pytest.fixture(scope="session")
 def smtp_inbound_connected(mail_config):
     """Skips tests if SMTP Inbound (port 25) is unreachable."""
+    if not is_configured(mail_config):
+        pytest.skip("Mail server not configured. Please set .env or vars.conf.")
     server = mail_config["server_name"]
     if not check_port_open(server, 25, timeout=1.5):
         pytest.skip(f"SMTP Inbound port 25 on {server} is unreachable.")
@@ -83,6 +110,8 @@ def smtp_inbound_connected(mail_config):
 @pytest.fixture(scope="session")
 def smtp_outbound_connected(mail_config):
     """Skips tests if SMTP Outbound (port 465) is unreachable."""
+    if not is_configured(mail_config):
+        pytest.skip("Mail server not configured. Please set .env or vars.conf.")
     server = mail_config["server_name"]
     if not check_port_open(server, 465, timeout=1.5):
         pytest.skip(f"SMTP Outbound port 465 on {server} is unreachable.")
@@ -91,9 +120,21 @@ def smtp_outbound_connected(mail_config):
 @pytest.fixture(scope="session")
 def imap_connected(mail_config):
     """Skips tests if IMAP (port 993) is unreachable."""
+    if not is_configured(mail_config):
+        pytest.skip("Mail server not configured. Please set .env or vars.conf.")
     server = mail_config["server_name"]
     if not check_port_open(server, 993, timeout=1.5):
         pytest.skip(f"IMAP port 993 on {server} is unreachable.")
+
+
+@pytest.fixture(scope="session")
+def smtp_submission_connected(mail_config):
+    """Skips tests if SMTP Submission (port 587) is unreachable."""
+    if not is_configured(mail_config):
+        pytest.skip("Mail server not configured. Please set .env or vars.conf.")
+    server = mail_config["server_name"]
+    if not check_port_open(server, 587, timeout=1.5):
+        pytest.skip(f"SMTP Submission port 587 on {server} is unreachable.")
 
 
 @pytest.fixture(scope="session")
@@ -314,6 +355,10 @@ def _send_smtp_message(
     """
     Sends an SMTP message using the provided configuration with transient retries.
     """
+    global _SMTP_RATE_LIMITED
+    if _SMTP_RATE_LIMITED:
+        pytest.skip("Skipping test because a preceding test hit SMTP rate limits.")
+
     server = config["server_name"]
     helo = config["helo_name"]
 
@@ -388,11 +433,19 @@ def _send_smtp_message(
                     msg = str(e.smtp_error)
 
             # Check if this is a transient/rate-limiting error
+            is_rate_limit = "rate limit" in msg.lower() or (
+                code == 452 and "limit" in msg.lower()
+            )
             is_transient = (
                 (code is not None and (400 <= code <= 499))
-                or "rate limit" in msg.lower()
                 or "try again later" in msg.lower()
-            )
+            ) or is_rate_limit
+
+            if is_rate_limit:
+                _SMTP_RATE_LIMITED = True
+                pytest.skip(
+                    f"Skipping test due to temporary SMTP rate limit: {code} {msg}"
+                )
 
             if is_transient and attempt < max_attempts - 1:
                 time.sleep(3.0)
