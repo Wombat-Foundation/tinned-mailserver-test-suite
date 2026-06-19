@@ -63,7 +63,7 @@ _AUTH_STATUS: dict[str, bool | None] = {
     "imap": None,
     "smtp_submission": None,
 }
-_SMTP_RATE_LIMITED = False
+_RATE_LIMIT_STATUS = {"is_limited": False}
 
 
 def check_port_open(host, port, timeout=1.0):
@@ -355,8 +355,7 @@ def _send_smtp_message(
     """
     Sends an SMTP message using the provided configuration with transient retries.
     """
-    global _SMTP_RATE_LIMITED
-    if _SMTP_RATE_LIMITED:
+    if _RATE_LIMIT_STATUS["is_limited"]:
         pytest.skip("Skipping test because a preceding test hit SMTP rate limits.")
 
     server = config["server_name"]
@@ -442,7 +441,7 @@ def _send_smtp_message(
             ) or is_rate_limit
 
             if is_rate_limit:
-                _SMTP_RATE_LIMITED = True
+                _RATE_LIMIT_STATUS["is_limited"] = True
                 pytest.skip(
                     f"Skipping test due to temporary SMTP rate limit: {code} {msg}"
                 )
